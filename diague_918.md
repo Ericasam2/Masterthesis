@@ -92,3 +92,47 @@ uint8 system_status
 ```
 
 I compare the code of MAVROS 0.19.0 and MAVROS 0.26.0 (the earliest version of mavros after melodic mavlink released), the main problem is that the log function is redefined in "#include \<mavconn/console_bridge_compat.h\>", if the code is regenerated, the current phase "catkin-build" problem may get fixed. 
+
+
+# Dialogue 8/10/2023
+## Ubuntu 16.04
+I used the virtual machine to install the ubuntu 16.04 and install the history version of mavlink and mavros.
+```bash
+samgao1999@ubuntu:~$ rosversion mavlink
+2016.10.10
+samgao1999@ubuntu:~$ rosversion mavros
+0.18.3
+```
+## Network and connection
+And I changed some internet setup in both */etc/network/interfaces* and */etc/wpa_supplicant/home.conf*:
+```bash
+erle@erle-brain:~ $ cat /etc/network/interfaces
+# Please note that this file is written to be used with dhcpcd.
+# For static IP, consult /etc/dhcpcd.conf and 'man dhcpcd.conf'.
+
+auto lo
+iface lo inet loopback
+
+auto wlan0
+allow-hotplug wlan0
+iface wlan0 inet manual
+wpa-conf /etc/wpa_supplicant/home.conf
+
+```
+
+```bash
+erle@erle-brain:~ $ cat /etc/wpa_supplicant/home.conf 
+network={
+	ssid="TP-LINK_ECE5"
+	#psk="setapassword"
+	psk=5b3ee93e6881321a6c5f00db4fe820c0993bd021e29e0ee8449de4a4f7ccd804
+}
+```
+
+One problem I want to keep note of is that the erleBrain3 only has **2.4Gz** wifi network connection, the prevailing 5Gz signal cannot be used by it. Also, under school network **eduroam**, the network cannot be shared through *bridge mode* in VMware. The ideal way is to use a private network. 
+## PreArm issue
+In previous setup, I find there is version collision so that I cannot check the */mavros/state*, now I fix the problem and I can check the state of the erleBrain, now new problem arise, even if I publish command to topic */mavros/rc/override*, the */mavros/rc/in* still do not give me the ideal signal. Now I think it may related to the *arming* issue, the controller may needed to be armed to take off or receive signal, when I try to arm the controller, it gives me the error:
+```bash
+[ERROR] [1696607025.001099516]: FCU: PreArm: 3D Accel calibration needed
+```
+In the following experiment, I will try to use the GroundStation to control it. 
