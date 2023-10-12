@@ -136,3 +136,13 @@ In previous setup, I find there is version collision so that I cannot check the 
 [ERROR] [1696607025.001099516]: FCU: PreArm: 3D Accel calibration needed
 ```
 In the following experiment, I will try to use the GroundStation to control it. 
+
+# Dialogue 12/10/2023
+## some error report
+Every time I try to ssh connect to the device after I turn on the ```~/apm.sh```, the terminal will report:
+```bash
+samgao1999@ubuntu:~$ ssh erle@192.168.1.106
+ssh: connect to host 192.168.1.106 port 22: No route to host
+```
+I need to restart the erlebrain to reconnect to it. 
+
