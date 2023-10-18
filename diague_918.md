@@ -146,3 +146,28 @@ ssh: connect to host 192.168.1.106 port 22: No route to host
 ```
 I need to restart the erlebrain to reconnect to it. 
 
+# Dialogue 19/10/2023
+## APM_planner2
+The basic workflow of connecting the erleBrain3 with host Machine:
+**On erleBrain3**
+```bash
+sudo ~/apm.sh
+```
+
+In */opt/ros/kinetic/setup-mavros.bash* add the last line:
+```
+roslaunch mavros apm.launch fcu_url:="udp://:6001@" gcs_url:="udp://192.168.1.106:9000@192.168.1.105:6000?ids=255,252,1"
+```
+Where *192.168.1.106* is erleBrain ip address and *192.168.1.105* is host machine ip address. 
+```bash
+/opt/ros/kinetic/setup-mavros.bash
+```
+Start the apm_planner:
+```
+~/apm_planner/apm_planner/release/apmplanner2 
+```
+ ## The RC is not started
+ When I try to calibrate the RC, I find there is an error *Radio Control is not active or turned on*. And at the same time the `3D Accelerometer Calibration` cannot be done without the rover. 
+ After checking some sources online [APM_Planner2 set up for erle-robotics](https://erlerobotics.gitbooks.io/erle-robotics-erle-brain-a-linux-brain-for-drones/content/en/GCS/apmplanner.html#configuring-simple-mode) and [APM 2.5 Ardupilot controller- setup guide](https://www.youtube.com/watch?v=QAFdHnoae0s&ab_channel=75echo), I find we may need the hardware eg. *Radio-Control Receiver* and *Radio-Control Sender*. Also, the network problem in the lab shall be fixed. 
+
+ 
