@@ -170,4 +170,18 @@ Start the apm_planner:
  When I try to calibrate the RC, I find there is an error *Radio Control is not active or turned on*. And at the same time the `3D Accelerometer Calibration` cannot be done without the rover. 
  After checking some sources online [APM_Planner2 set up for erle-robotics](https://erlerobotics.gitbooks.io/erle-robotics-erle-brain-a-linux-brain-for-drones/content/en/GCS/apmplanner.html#configuring-simple-mode) and [APM 2.5 Ardupilot controller- setup guide](https://www.youtube.com/watch?v=QAFdHnoae0s&ab_channel=75echo), I find we may need the hardware eg. *Radio-Control Receiver* and *Radio-Control Sender*. Also, the network problem in the lab shall be fixed. 
 
+# Dialogue 26/10/2023
+## Environment Setup
+I set another modem in the lab, and connected the laptop, virtue machine, and erleBrain to the modem, This way I created a local network. 
+The Segment and IP address are:
+```bash
+Host machine: 192.168.0.103
+ErleBrain: 192.168.0.101
+```
+## the bound Remote Control signal
+if we publish data on the topic `/mavros/rc/override mavros_msgs/OverriRCIn`, and then we subscribe the topic `/mavros/rc/override mavros_msgs/out`, we can observe that only two channels are valid:
+**Prerequisite: Armed and Manual**
+* ch1 is bounded by [1100, 1900]
+* ch3 is bounded by [1208, 1900] 
+Use `rostopic pub -1 /mavros/rc/override mavros_msgs/OverrideRCIn "channels: [0,0,0,0,0,0,0,0]"` to enable the remote control 
  
