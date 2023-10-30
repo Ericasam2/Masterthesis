@@ -280,6 +280,7 @@ source /opt/ros/kinetic/setup.bash
     ```
 
 ## Some hardware issue
+![The seriel ports of ErleBrain](media/Erle-Brain2_dimensiones.jpg)
 * Many funtions of the erleBrain are hardware-based, which means the seriel leads need to be connected to other hardware to enble the correspending functions.
 * To enable the `Radio Control`, 
   * the `PPM-SUM input channel` need to be connected to `RC receiver`;
