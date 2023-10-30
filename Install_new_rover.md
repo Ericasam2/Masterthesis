@@ -329,3 +329,27 @@ roslaunch mavros apm.launch fcu_url:="udp://:6001@" gcs_url:="udp://192.168.0.10
 # ErleBrain IP: 192.168.0.102
 # HostMachine IP: 192.168.0.101
 ```
+
+## Simple Control 
+### Calibration 
+* Follow the instruction from the `Apm Planner 2` to do the calibration;
+
+### Using terminal to send RC signal 
+* We can send to Remote Control through `rostopic`
+    ```bash
+    rostopic pub -r 10 /mavros/rc/override mavros_msgs/OverrideRCIn "channels: [1500, 0, 1500, 0, 0, 0, 0, 0]" 
+    ```
+* We can use the command to **arm** the rover to enable the accelaration of the rover:
+    ```bash
+    rosservice call /mavros/cmd/arming True
+    ```
+* `channel 1` is used to control the steering angle and `channel 3` is used to control the accelaration. 
+* While using the `terminal` to control the rover, the **transmitter** will be disabled, we can run the following command to enable the **transmitter**:
+  ```bash
+  rostopic pub -1 /mavros/rc/override mavros_msgs/OverrideRCIn "channels: [0,0,0,0,0,0,0,0]"
+  ```
+
+### Using transmitter to send RC signal 
+TBD
+
+
