@@ -8,22 +8,28 @@ MAVROS 0.18.3 \
 MAVLINK 2016.10.10 
 
 ## Install Ubuntu
-The ubuntu can be ran on virtual machine (eg. VMWARE), we can follow the [install guide](https://linuxconcept.com/how-to-install-ubuntu-16-04-in-vmware-workstation/) to install the ubuntu. After installation, we can use `ctrl` + `alt` + `t` to open the terminal and enter:
-```bash
-lsb_release -a
-```
-The version of the ubuntu should be shown in the terminal. \
-The reason we choose Ubuntu 16.04: Mainly because the compatiality of the MAVLINK and MAVROS version.
+1. Install Ubuntu 16.04: 
+   * The ubuntu can be ran on virtual machine (eg. VMWARE)
+   * you can follow the [install guide](https://linuxconcept.com/how-to-install-ubuntu-16-04-in-vmware-workstation/) to install the ubuntu. 
+2. Verify Ubuntu Installation:
+   * After installation, open the terminal with `ctrl` + `alt` + `t` 
+   * Enter the following command to verify the Ubuntu version:
+    ```bash
+    lsb_release -a
+    ```
+    * The terminal should display the Ubuntu version.
+
+The reason for choosing Ubuntu 16.04 is mainly due to compatibility with MAVLINK and MAVROS versions.
 
 ## Install ROS
-The ROS can be installed based on the [Ubuntu install of ROS Kinetic](https://wiki.ros.org/kinetic/Installation/Ubuntu). After the installation, we can open the terminal and enter:
-```bash
-rosversion -d
-```
-The following should be shown on the terminal:
-```bash
-kinetic
-```
+1. Install ROS Kinetic:
+   * The ROS can be installed based on the [Ubuntu install of ROS Kinetic](https://wiki.ros.org/kinetic/Installation/Ubuntu)
+2. Verify ROS Installation:
+   * After the installation, open the terminal and enter the following command:
+    ```bash
+    rosversion -d
+    ```
+   * The terminal should display `kinetic`, indicating a successful ROS installation.
 
 ## Install MAVLINK and MAVROS
 The MAVROS and MAVLINK can be installed using `wget` webtool. The following installation guide are mainly based on the [PX4 USER GUIDE](https://docs.px4.io/main/en/ros/mavros_installation.html):
@@ -78,32 +84,40 @@ catkin build
 source devel/setup.bash
 ```
 
-## Connect to ErleBrain
-There are several ways to connect to the erlebrain: Hotspot, ethernet cable, wifi, monitor&keyboard, etc ... \
-Here we will introduce how to use the cable and wifi to connect to the erleBrain. 
-### Ethernet Cable:
-* the Platform is windows 10.
-1. connect the erlebrain to the computer with the ethernet cable. 
-    * you should observe the ethernet Network port on erleBrain is flashing. 
-    * If it is not flashing, you need use the monitor&keyboard. 
-2. Share the network connection:
-    * Access the “Network Connections”;
-    * Right click on the Ethernet connection and select “Properties”;
-    * Click on "Sharing Tab";
-    * Enable sharing and choose the ethernet port the erleBrain is using.   
-3. Check the ipadress of the erlebrain:
-   * Open terminal in Windows and type `arp -a`
-   * Find the ipaddress of the erlebrain 
-   * the ipaddress of erlebrain normally should be a dynamic address. 
-4. Using ssh to connect to the erlebrain
-   ```bash
-   user.name = "erle"
-   user.password = "holaerle"
-   ```
-   We will have a terminal where we can interface with the erleBrain using ssh. 
+## Connecting to ErleBrain
 
-### Connect the erleBrain to Wifi:
-1. Create a wpa passphase based on the Wifi network you want to connect `wpa_passphrase HostPC holahost`, change the `HostPC` to the name of your Wifi, and change the `holahost` to the correspending password. 
+There are several methods to connect to the ErleBrain: Hotspot, Ethernet cable, Wi-Fi, and using a monitor and keyboard. This guide will explain how to connect via cable and Wi-Fi.
+
+### Using an Ethernet Cable
+
+**Platform: Windows 10**
+
+1. **Connect ErleBrain to Your Computer**:
+   - Plug the Ethernet cable into the ErleBrain and your computer.
+   - Observe the Ethernet Network port on the ErleBrain; it should be flashing. If it's not flashing, consider using the monitor and keyboard method (explained below).
+
+2. **Share the Network Connection**:
+   - Access the "Network Connections" on your Windows machine.
+   - Right-click on the Ethernet connection and select "Properties."
+   - Click on the "Sharing" tab.
+   - Enable sharing and choose the Ethernet port that the ErleBrain is using.
+
+3. **Check the IP Address of ErleBrain**:
+   - Open the Windows terminal and enter the command: `arp -a`.
+   - Find the IP address of the ErleBrain; typically, it's a dynamic address.
+
+4. **Connecting via SSH**:
+   - Use the following credentials to connect to the ErleBrain via SSH:
+     ```bash
+     Username: erle
+     Password: holaerle
+     ```
+   - You will have access to a terminal to interact with the ErleBrain using SSH.
+
+### Connecting the ErleBrain to Wi-Fi
+
+1. **Create a WPA Passphrase**:
+   - Generate a WPA passphrase for the Wi-Fi network you want to connect to. Replace `HostPC` with the network name and `holahost` with the corresponding password.
    ```bash
     network={
             ssid="HostPC"
@@ -111,32 +125,36 @@ Here we will introduce how to use the cable and wifi to connect to the erleBrain
             psk=c80d81ddbd0c2fb867164fdc93bceb1a76075d7c4ba635e8faa08f4d8f394312
     }
    ```
-   Then save the above generated-content to `/etc/wpa_supplicant/erle.conf`, change the name `erle.conf` to the the name you want, the file need to end with `.conf`
-   Edit the file using:
-   ```bash
-   sudo nano /etc/wpa_supplicant/erle.conf
-   ```
-2. Edit the `interface` file using:
-    ```bash
-    sudo nano /etc/network/interfaces
-    ```
+   - Save the content above to a file in `/etc/wpa_supplicant/`, naming it as desired but ending with `.conf`. You can edit the file using:
 
-    ```bash
-    # Please note that this file is written to be used with dhcpcd.
-    # For static IP, consult /etc/dhcpcd.conf and 'man dhcpcd.conf'.
+     ```bash
+     sudo nano /etc/wpa_supplicant/your-chosen-name.conf
+     ```
+2. **Edit the `interfaces` File**:
+   - Open the `interfaces` file for editing using the following command:
 
-    auto lo
-    iface lo inet loopback
+     ```bash
+     sudo nano /etc/network/interfaces
+     ```
 
-    auto wlan0
-    allow-hotplug wlan0
-    iface wlan0 inet manual
-    wpa-conf /etc/wpa_supplicant/erle.conf
-    ```
-    Make sure to comment all the other network configuration options. 
-3. Restart the erleBrain and the Wifi will be automatically connected. 
-   
-**Note that the erleBrain can connect to the ethernet and the Wifi at the same time.**
+   - Replace existing network configurations with the following lines:
+
+     ```bash
+     auto lo
+     iface lo inet loopback
+
+     auto wlan0
+     allow-hotplug wlan0
+     iface wlan0 inet manual
+     wpa-conf /etc/wpa_supplicant/your-chosen-name.conf
+     ```
+
+   Make sure to comment out any other network configurations.
+
+3. **Restart ErleBrain**:
+   - After making these changes, restart the ErleBrain, and it will automatically connect to the Wi-Fi network.
+
+**Note**: ErleBrain can connect to Ethernet and Wi-Fi simultaneously.
 
 ### Monitor&keyboard:
 
@@ -150,30 +168,35 @@ You need to connect the erleBrain with the monitor and keyboard with the HDMI ca
 ## Host machine and local network
 
 ### Host Machine
-In VMWare, the host machine can be configured and connected to the network in the following way, the guide is based on [VMware Docs](https://docs.vmware.com/en/VMware-Workstation-Pro/17/com.vmware.ws.using.doc/GUID-826323AD-D014-475D-8909-DFA73B5A3A57.html):
-1. Select virtual machine and select VM>Setting.
-2. On the Hardware tab, select Network Adapter;
-3. Select *Bridged: Connected directly to the physical network*
-4. Select *Replicate physical network connection state*
+To configure your host machine for network connectivity in VMware, follow these steps, which are based on [VMware Docs](https://docs.vmware.com/en/VMware-Workstation-Pro/17/com.vmware.ws.using.doc/GUID-826323AD-D014-475D-8909-DFA73B5A3A57.html):
+1. Select your virtual machine and go to VM > Settings.
+2. On the Hardware tab, select Network Adapter.
+3. Choose "Bridged: Connected directly to the physical network."
+4. Select "Replicate physical network connection state."
 5. Save the changes.
-6. In your Virtual machine, type the command in the terminal
-   `ifconfig`, you will see your IP address (normally in the form of `192.168.*.*`)
+6. In your virtual machine, open the terminal and type the command `ifconfig`. You will see your IP address, typically in the form of `192.168.*.*`.
 
-Note that some network do not allow the VMware to have a unique IP address (eg. `eduroam`). If this case happen, we can establish another local network instead. 
+**Note**: Some networks, like `eduroam`, may not allow VMware to have a unique IP address. In such cases, you can establish a local network as described below.
 
 
 ### Local Network
-1. You need your personal modem to create a local network; 
-2. Power up the modem and do the above process to connect the laptop and the erleBrain to the local network. 
+To create a local network, follow these steps:
+
+1. You need your personal modem to create a local network.
+2. Power up the modem and connect both the laptop and the ErleBrain to the local network.
 
 ### Tests
-* On host machine (ubuntu 16.04 in Virual machine), run the following command to test the connection, change the `192.168.0.102` to your erleBrain's IP address.
-```bash
-ping 192.168.0.102
-```
-* On ErleBrain, run the following command to test the connection, change the `192.168.0.101` to your hostmachine's IP address.
+To ensure that your network connection is working correctly, you can perform the following tests:
+
+**On the Host Machine (Ubuntu 16.04 in the Virtual Machine)**:
+Run the following command, replacing `192.168.0.101` with your ErleBrain's IP address:
 ```bash
 ping 192.168.0.101
+```
+
+**On ErleBrain**: Run the following command, replacing `192.168.0.102` with your ErleBrain's IP address:
+```bash
+ping 192.168.0.102
 ```
 If the `ping` is successful both ways, the connection is established, and we can do the further MAVLink test. 
 
