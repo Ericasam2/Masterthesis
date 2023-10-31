@@ -13,6 +13,7 @@ public:
         imu_sub = nh.subscribe("/mavros/imu/data", 10, &KeyboardControlNode::imuCallback, this);
         rc_override_sub = nh.subscribe("/mavros/rc/in", 10, &KeyboardControlNode::rcInCallback, this);
         initialize_rc_mapping();
+        KeyboardInput keyboard_reader();
     }
 
     void imuCallback(const sensor_msgs::Imu::ConstPtr& imu_msg){
@@ -33,31 +34,31 @@ public:
     }
 
     void initialize_rc_mapping(){
-        charToVectorMap['w'] = {0  , 0,  10, 0, 0, 0, 0, 0};
-        charToVectorMap['s'] = {0  , 0, -10, 0, 0, 0, 0, 0};
-        charToVectorMap['a'] = {-10, 0,  0, 0, 0, 0, 0, 0};
-        charToVectorMap['d'] = {10 , 0,  0, 0, 0, 0, 0, 0};
+        charToVectorMap['w']{0  , 0,  10, 0, 0, 0, 0, 0};
+        charToVectorMap['s']{0  , 0, -10, 0, 0, 0, 0, 0};
+        charToVectorMap['a']{-10, 0,  0, 0, 0, 0, 0, 0};
+        charToVectorMap['d']{10 , 0,  0, 0, 0, 0, 0, 0};
     }
 
     void rc_control_logic(vector<int> rcIn_channels){
         ch = keyboard_reader.get_keyboard_input();
         if (ch == 'q'){
             // if "q" is pressed, switch to transmitter control
-            rcOverride_channels = assign_channel_value(rcOverride_channels, std::vectors<int>{0, 0, 0, 0, 0, 0, 0, 0}, 8);
+            rcOverride_channels = std::vectors<int>{0, 0, 0, 0, 0, 0, 0, 0};
         } 
         else if (ch == ERR) {
             // if no key is pressed, return to the default
-            rcOverride_channels = assign_channel_value(rcOverride_channels, std::vectors<int>{1500, 0, 1400, 0, 0, 0, 0, 0}, 8);
+            rcOverride_channels = std::vectors<int>{1500, 0, 1400, 0, 0, 0, 0, 0};
         } 
         else{
             if (charToVectorMap.find(ch) != charToVectorMap.end()) {
                 // if the key is within {"w","s","a","d"}
-                rcOverride_channels = assign_channel_value(rcOverride_channels, rcIn_channels + charToVectorMap[ch], 8);
                 rcOverride_channels = rcIn_channels + charToVectorMap[ch];
+                // rcOverride_channels = rcIn_channels + charToVectorMap[ch];
             }
             else {
                 // Handle invalid keys
-                rcOverride_channels = assign_channel_value(rcOverride_channels, std::vectors<int>{1500, 0, 1400, 0, 0, 0, 0, 0}, 8);
+                rcOverride_channels = std::vectors<int>{1500, 0, 1400, 0, 0, 0, 0, 0};
             }
         }
         // the car need to handle multiple input as well
