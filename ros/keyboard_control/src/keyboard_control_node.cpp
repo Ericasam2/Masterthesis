@@ -43,24 +43,32 @@ public:
         ch = keyboard_reader.get_keyboard_input();
         if (ch == 'q'){
             // if "q" is pressed, switch to transmitter control
-            rcOverride_channels = {0, 0, 0, 0, 0, 0, 0, 0};
+            rcOverride_channels = assign_channel_value(rcOverride_channels, std::vectors<int>{0, 0, 0, 0, 0, 0, 0, 0}, 8);
         } 
         else if (ch == ERR) {
             // if no key is pressed, return to the default
-            rcOverride_channels = {1500, 0, 1400, 0, 0, 0, 0, 0};
+            rcOverride_channels = assign_channel_value(rcOverride_channels, std::vectors<int>{1500, 0, 1400, 0, 0, 0, 0, 0}, 8);
         } 
         else{
             if (charToVectorMap.find(ch) != charToVectorMap.end()) {
                 // if the key is within {"w","s","a","d"}
+                rcOverride_channels = assign_channel_value(rcOverride_channels, rcIn_channels + charToVectorMap[ch], 8);
                 rcOverride_channels = rcIn_channels + charToVectorMap[ch];
             }
             else {
                 // Handle invalid keys
-                rcOverride_channels = {1500, 0, 1400, 0, 0, 0, 0, 0};
+                rcOverride_channels = assign_channel_value(rcOverride_channels, std::vectors<int>{1500, 0, 1400, 0, 0, 0, 0, 0}, 8);
             }
         }
         // the car need to handle multiple input as well
         // tbd
+    }
+
+    std::vector<int> assign_channel_value(std::vector<int>& old_value, std::vector<int> new_value, int length){
+        for (int i = 0; i < length; ++i) {
+            old_value[i] = new_value[i];
+        }
+        return old_value;
     }
 
 
