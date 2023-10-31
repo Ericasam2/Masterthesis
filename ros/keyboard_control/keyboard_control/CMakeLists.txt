@@ -1,8 +1,6 @@
 cmake_minimum_required(VERSION 3.0.2)
 project(keyboard_control)
 
-add_compile_options(-std=c++11)
-
 find_package(catkin REQUIRED COMPONENTS
   roscpp
   mavros_msgs
@@ -15,14 +13,14 @@ catkin_package(
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
-  ncurses
+  ${CURSES_INCLUDE_DIR}
 )
 
 add_executable(keyboard_control_node src/keyboard_control_node.cpp)
 
 target_link_libraries(keyboard_control_node
   ${catkin_LIBRARIES}
-  ncurses
+  ${CURSES_INCLUDE_DIR}
 )
 
 install(TARGETS keyboard_control_node
