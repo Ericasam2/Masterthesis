@@ -21,7 +21,7 @@ public:
 
     void rcInCallback(const mavros_msgs::RCIn::ConstPtr& rcIn_msg){
         // Callback function for processing RC override In data
-        rcIn_channels = rcIn_msg->channels;
+        rcIn_channels = rcIn_msg->channels[0];
         rcOverride_channels = rc_control_logic(rcIn_channels);
         rc_override_msg.channels = rcOverride_channels; 
     }
