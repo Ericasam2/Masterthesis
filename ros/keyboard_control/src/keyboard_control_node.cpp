@@ -49,13 +49,9 @@ public:
     void rcInCallback(const mavros_msgs::RCIn::ConstPtr& rcIn_msg){
         // Callback function for processing RC override In data
 
-	for (int i = 0; i < 8; ++i){
-		rcIn_channels[i] = rcIn_msg->channels[i];
-	}
+        for (int i = 0; i < 8; ++i){ rcIn_channels[i] = rcIn_msg->channels[i]; }
         rc_control_logic(rcIn_channels);
-	for (int i = 0; i < 8; ++i){
-		rc_override_msg.channels[i] = rcOverride_channels[i]; 
-	}
+        for (int i = 0; i < 8; ++i){ rc_override_msg.channels[i] = rcOverride_channels[i]; }
     }
 
     void rcOverridePublish(){
