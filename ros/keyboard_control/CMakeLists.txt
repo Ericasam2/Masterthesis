@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.2)
-project(your_keyboard_control_package)
+project(keyboard_control)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -13,12 +13,14 @@ catkin_package(
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
+  ${CURSES_INCLUDE_DIR}
 )
 
 add_executable(keyboard_control_node src/keyboard_control_node.cpp)
 
 target_link_libraries(keyboard_control_node
   ${catkin_LIBRARIES}
+  ${CURSES_INCLUDE_DIR}
 )
 
 install(TARGETS keyboard_control_node

@@ -3,6 +3,8 @@
 #include <sensor_msgs/Imu.h>
 #include <ncurses.h> // Include the ncurses library
 
+using namespace std
+
 class KeyboardControlNode
 {
 public:
@@ -62,7 +64,6 @@ public:
     }
 
 
-
 private:
     ros::NodeHandle nh;
     ros::Publisher rc_override_pub;
@@ -87,7 +88,7 @@ public:
         keypad(stdscr, TRUE);
     }
 
-    void get_keyboard_input(){
+    char get_keyboard_input(){
         // Check for keyboard input
         ch = getch();
         return ch;
@@ -100,7 +101,7 @@ public:
 
 private:
     char ch;
-}；
+};
 
 
 int main(int argc, char **argv)

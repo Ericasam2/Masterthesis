@@ -1,10 +1,11 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>your_keyboard_control_package</name>
+  <name>keyboard_control</name>
   <version>0.0.0</version>
   <description>The keyboard control package</description>
   
-  <maintainer email="s.gao-9@student.tudelft.nl">Your Name</maintainer>
+  <maintainer email="s.gao-9@student.tudelft.nl">Sam Gao</maintainer>
+  <license> MIT License </license>
   
   <buildtool_depend>catkin</buildtool_depend>
   
