@@ -18,7 +18,8 @@ include_directories(
   ncurses
 )
 
-add_executable(keyboard_control_node src/keyboard_control_node.cpp)
+# add_executable(keyboard_control_node src/keyboard_control_node.cpp)
+add_executable(keyboard_control_node src/keyboard_input_test.cpp)
 
 target_link_libraries(keyboard_control_node
   ${catkin_LIBRARIES}
