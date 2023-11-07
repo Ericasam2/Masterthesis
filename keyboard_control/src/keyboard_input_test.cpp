@@ -8,9 +8,9 @@ class KeyboardControlNode
 {
 public:
     KeyboardControlNode() : nh("~"){
-        rc_override_pub = nh.advertise<mavros_msgs::OverrideRCIn>("/mavros/rc/override", 1000);
+        rc_override_pub = nh.advertise<mavros_msgs::OverrideRCIn>("/mavros/rc/override", 10);
         // imu_sub = nh.subscribe("/mavros/imu/data", 10, &KeyboardControlNode::imuCallback, this);
-        RCIn_sub = nh.subscribe("/mavros/rc/in", 1000, &KeyboardControlNode::rcInCallback, this);
+        RCIn_sub = nh.subscribe("/mavros/rc/in", 10, &KeyboardControlNode::rcInCallback, this);
         initialize_rc_mapping();
         // Initialize ncurses for keyboard input
         initscr();
@@ -31,9 +31,19 @@ public:
 		ch = getch();
 		// if (ch == ERR) { ROS_INFO("NO Input"); }
 		// else { ROS_INFO("keyboard input: %c", ch); }
-        for (int i = 0; i < 8; ++i){ rcIn_channels[i] = rcIn_msg->channels[i]; }
-        rc_control_logic(rcIn_channels);
-        for (int i = 0; i < 8; ++i){ rc_override_msg.channels[i] = rcOverride_channels[i]; }
+        if (ch == ERR) { 
+            rcOverride_channels = {0, 0, 0, 0, 0, 0, 0, 0}; 
+        }
+        else{
+            for (int i = 0; i < 8; ++i){ 
+                rcIn_channels[i] = rcIn_msg->channels[i]; 
+            }
+            rc_control_logic(rcIn_channels);
+            for (int i = 0; i < 8; ++i){ 
+                rc_override_msg.channels[i] = rcOverride_channels[i]; 
+            }
+        }
+
     }
 
     void rcOverridePublish(){
@@ -55,33 +65,26 @@ public:
     }
 
     void rc_control_logic(std::vector<int> rcIn_channels){
-        if (ch == 'q'){
-            // if "q" is pressed, switch to transmitter control
+        if (charToVectorMap.find(ch) != charToVectorMap.end()) {
+            // if the key is within {"w","s","a","d"}
+            rcOverride_channels = rcIn_channels;
+            rcOverride_channels[0] += charToVectorMap[ch][0];
+            rcOverride_channels[2] += charToVectorMap[ch][2];
+            // bound by [1100, 1900]
+            rcOverride_channels[0] = std::min(1900, std::max(rcOverride_channels[0], 1100));
+            rcOverride_channels[2] = std::min(1900, std::max(rcOverride_channels[2], 1100));
+        }
+        else {
+            // Handle invalid keys
             rcOverride_channels = {0, 0, 0, 0, 0, 0, 0, 0};
-        } 
-        else if (ch == ERR) {
-            // if no key is pressed, return to the default
-            // rcOverride_channels = {1500, 0, 1400, 0, 0, 0, 0, 0};
-        } 
-        else{
-            if (charToVectorMap.find(ch) != charToVectorMap.end()) {
-                // if the key is within {"w","s","a","d"}
-                rcOverride_channels = rcIn_channels;
-                rcOverride_channels[0] += charToVectorMap[ch][0];
-				rcOverride_channels[2] += charToVectorMap[ch][2];
-				rcOverride_channels[0] = std::min(1900, std::max(rcOverride_channels[0], 1100));
-				rcOverride_channels[2] = std::min(1900, std::max(rcOverride_channels[2], 1100));
-            }
-            else {
-                // Handle invalid keys
-                rcOverride_channels = {0, 0, 0, 0, 0, 0, 0, 0};
-            }
         }
         // the car need to handle multiple input as well
         // tbd
     }
 
-
+    char get_keyboard_input(){
+        return ch;
+    }
 
 private:
     ros::NodeHandle nh;
@@ -90,7 +93,7 @@ private:
     mavros_msgs::OverrideRCIn rc_override_msg;
     ros::Subscriber RCIn_sub;
     // KeyboardInput keyboard_reader;
-    char ch;
+    char ch(' ');
     std::map<char, std::vector<int>> charToVectorMap;
     std::vector<int> rcIn_channels{ 0,0,0,0,0,0,0,0 };
     std::vector<int> rcOverride_channels{ 0,0,0,0,0,0,0,0 };
@@ -108,7 +111,6 @@ int main(int argc, char **argv)
     {
         // Publish the RC override message
         keyboard_control_node.rcOverridePublish();
-        // run callback
         ros::spinOnce();
     }
     endwin();
