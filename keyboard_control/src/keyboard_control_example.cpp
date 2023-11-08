@@ -17,6 +17,12 @@ std::map<char, std::vector<float>> SpeedMap
   {'d', {1, 0, 0, 0, 0, 0, 0, 0}}
 };
 
+// Map for command
+std::map<char, bool> CommandMap
+{
+  {',', true},
+  {'.', false}
+};
 
 // Reminder message
 const char* msg = R"(
@@ -76,6 +82,9 @@ int main(int argc, char** argv)
 
   // Init cmd_vel publisher
   ros::Publisher rc_override_pub = nh.advertise<mavros_msgs::OverrideRCIn>("/mavros/rc/override", 10);
+  // Init service client
+  ros::ServiceClient client = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/arming");
+
 
   // Init the incremental variables
   int steer = 0;
@@ -102,7 +111,7 @@ int main(int argc, char** argv)
     if (SpeedMap.count(key) == 1)
     {
       // set control magnitude
-      int mag = 800 / 2 / rate;
+      int mag = 800 / 1 / rate;
       // Grab the direction data
       steer = SpeedMap[key][0];
       accel = SpeedMap[key][2];
@@ -112,6 +121,13 @@ int main(int argc, char** argv)
       if (channel3 != 0) {channel3 = std::min(1900, std::max(channel3, 1100));}
 
       printf("\rCurrent: channel1 %d\tchannel3 %d |  Last command: %c   ", channel1, channel3, key);
+    }
+    else if (CommandMap.count(key) == 1)
+    {
+      mavros_msgs::CommandBool srv;
+      srv.request.arming = CommandMap[key]; // Set the request data
+      if (CommandMap[key]) { printf("\rCurrent: Arming  |  Last command: %c   ", key); }
+      else { printf("\rCurrent: DisArming  |  Last command: %c   ", key); }
     }
     // Otherwise, set the robot to stop
     else
@@ -124,10 +140,10 @@ int main(int argc, char** argv)
       // If ctrl-C (^C) was pressed, terminate the program
       if (key == '\x03')
       {
-	    for (int i = 0; i < 8; ++i){ 
-	      rc_override_msg.channels[i] = 0; 
-	    }
-	rc_override_pub.publish(rc_override_msg);
+        for (int i = 0; i < 8; ++i){ 
+          rc_override_msg.channels[i] = 0; 
+        }
+	      rc_override_pub.publish(rc_override_msg);
         printf("\n\n                 .     .\n              .  |\\-^-/|  .    \n             /| } O.=.O { |\\\n\n                 CH3EERS\n\n");
         break;
       }
