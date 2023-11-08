@@ -11,10 +11,10 @@
 // Map for speed keys
 std::map<char, std::vector<float>> charToVectorMap
 {
-  {'w', {0, 0, 10, 0, 0, 0, 0, 0}},
-  {'a', {-10, 0, 0, 0, 0, 0, 0, 0}},
-  {'s', {0, 0, -10, 0, 0, 0, 0, 0}},
-  {'d', {10, 0, 0, 0, 0, 0, 0, 0}}
+  {'w', {0, 0, 50, 0, 0, 0, 0, 0}},
+  {'a', {-50, 0, 0, 0, 0, 0, 0, 0}},
+  {'s', {0, 0, -50, 0, 0, 0, 0, 0}},
+  {'d', {50, 0, 0, 0, 0, 0, 0, 0}}
 };
 
 // Reminder message
@@ -99,17 +99,28 @@ int main(int argc, char** argv)
       // Grab the direction data
       steer = charToVectorMap[key][0];
       accel = charToVectorMap[key][2];
+      channel1 += steer;
+      channel3 += accel;
+      if (channel1 != 0) {channel1 = std::min(1900, std::max(channel1, 1100));}
+      if (channel3 != 0) {channel3 = std::min(1900, std::max(channel3, 1100));}
 
       printf("\rCurrent: channel1 %d\tchannel3 %d |  Last command: %c   ", channel1, channel3, key);
     }
     // Otherwise, set the robot to stop
     else
     {
+      channel1 = 0;
+      channel3 = 0;
+      steer = 0;
       accel = 0;
 
       // If ctrl-C (^C) was pressed, terminate the program
       if (key == '\x03')
       {
+	    for (int i = 0; i < 8; ++i){ 
+	      rc_override_msg.channels[i] = 0; 
+	    }
+	rc_override_pub.publish(rc_override_msg);
         printf("\n\n                 .     .\n              .  |\\-^-/|  .    \n             /| } O.=.O { |\\\n\n                 CH3EERS\n\n");
         break;
       }
@@ -118,10 +129,9 @@ int main(int argc, char** argv)
     }
 
     // Update the RCOverride message
-    rcOverride_channels[0] += steer;
-    rcOverride_channels[2] += accel;
-    rcOverride_channels[0] = std::min(1900, std::max(rcOverride_channels[0], 1100));
-    rcOverride_channels[2] = std::min(1900, std::max(rcOverride_channels[2], 1100));
+    rcOverride_channels[0] = channel1;
+    rcOverride_channels[2] = channel3;
+    // Update the RCOverride messagenm
     for (int i = 0; i < 8; ++i){ 
       rc_override_msg.channels[i] = rcOverride_channels[i]; 
     }
