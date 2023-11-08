@@ -9,13 +9,14 @@
 #include <map>
 
 // Map for speed keys
-std::map<char, std::vector<float>> charToVectorMap
+std::map<char, std::vector<float>> SpeedMap
 {
-  {'w', {0, 0, 50, 0, 0, 0, 0, 0}},
-  {'a', {-50, 0, 0, 0, 0, 0, 0, 0}},
-  {'s', {0, 0, -50, 0, 0, 0, 0, 0}},
-  {'d', {50, 0, 0, 0, 0, 0, 0, 0}}
+  {'w', {0, 0, 1, 0, 0, 0, 0, 0}},
+  {'a', {-1, 0, 0, 0, 0, 0, 0, 0}},
+  {'s', {0, 0, -1, 0, 0, 0, 0, 0}},
+  {'d', {1, 0, 0, 0, 0, 0, 0, 0}}
 };
+
 
 // Reminder message
 const char* msg = R"(
@@ -76,7 +77,7 @@ int main(int argc, char** argv)
   // Init cmd_vel publisher
   ros::Publisher rc_override_pub = nh.advertise<mavros_msgs::OverrideRCIn>("/mavros/rc/override", 10);
 
-  // 
+  // Init the incremental variables
   int steer = 0;
   int accel = 0;
 
@@ -86,6 +87,10 @@ int main(int argc, char** argv)
   // Initial RC Override data
   std::vector<int> rcOverride_channels{ 0,0,0,0,0,0,0,0 };
 
+  // Sampling time
+  int rate(20);
+  ros::Rate loop_rate(rate);
+
   printf("\rCurrent: channel1 %d\tchannel3 %d | Awaiting command...\r", channel1, channel3);
 
   while(true){
@@ -94,13 +99,15 @@ int main(int argc, char** argv)
     key = getch();
 
     // If the key corresponds to a key in moveBindings
-    if (charToVectorMap.count(key) == 1)
+    if (SpeedMap.count(key) == 1)
     {
+      // set control magnitude
+      int mag = 800 / 2 / rate;
       // Grab the direction data
-      steer = charToVectorMap[key][0];
-      accel = charToVectorMap[key][2];
-      channel1 += steer;
-      channel3 += accel;
+      steer = SpeedMap[key][0];
+      accel = SpeedMap[key][2];
+      channel1 += mag * steer;
+      channel3 += mag * accel;
       if (channel1 != 0) {channel1 = std::min(1900, std::max(channel1, 1100));}
       if (channel3 != 0) {channel3 = std::min(1900, std::max(channel3, 1100));}
 
@@ -138,6 +145,8 @@ int main(int argc, char** argv)
 
     // Publish it and resolve any remaining callbacks
     rc_override_pub.publish(rc_override_msg);
+
+    loop_rate.sleep();
     ros::spinOnce();
   }
 
