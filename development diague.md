@@ -184,4 +184,14 @@ if we publish data on the topic `/mavros/rc/override mavros_msgs/OverriRCIn`, an
 * ch1 is bounded by [1100, 1900]
 * ch3 is bounded by [1208, 1900] 
 Use `rostopic pub -1 /mavros/rc/override mavros_msgs/OverrideRCIn "channels: [0,0,0,0,0,0,0,0]"` to enable the remote control 
- 
+
+# Dialogue 8/11/2023
+## Software
+Now I am adopting the `teleop_twist_keyboard_cpp` method to control the rover with the keyboard. 
+I am required to take the **sampling time** into consideration. So Even if the sampling time is changing, I still need to control the wheel to go through the whole control span with a certain amount of time. 
+```
+T = 1[s]
+lower bound = 1100
+upper bound = 1900
+```
+Now I am trying to add `arming` into the control program, I can call arming with the keyboard "," or "."
