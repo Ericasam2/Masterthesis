@@ -1,20 +1,19 @@
-
 #include <ros/ros.h>
+#include <geometry_msgs/Twist.h>
 
 #include <stdio.h>
 #include <unistd.h>
 #include <termios.h>
-#include <mavros_msgs/OverrideRCIn.h>
 
 #include <map>
 
-// Map for speed keys
-std::map<char, std::vector<float>> charToVectorMap
+// Map for control
+std::map<char, std::vector<int>> charToVectorMap
 {
-  {'w', {0, 0, 10, 0, 0, 0, 0, 0}},
-  {'a', {-10, 0, 0, 0, 0, 0, 0, 0}},
-  {'s', {0, 0, -10, 0, 0, 0, 0, 0}},
-  {'d', {10, 0, 0, 0, 0, 0, 0, 0}}
+  {'w', {0, 0, 50, 0, 0, 0, 0, 0}},
+  {'s', {0, 0, 50, 0, 0, 0, 0, 0}},
+  {'a', {0, 0, 50, 0, 0, 0, 0, 0}},
+  {'d', {0, 0, 50, 0, 0, 0, 0, 0}},
 };
 
 // Reminder message
@@ -34,8 +33,9 @@ CTRL-C to quit
 )";
 
 // Init variables
-int channel1(1500);
-int channel3(1500);
+float speed(0.5); // Linear velocity (m/s)
+float turn(1.0); // Angular velocity (rad/s)
+float x(0), y(0), z(0), th(0); // Forward/backward/neutral direction vars
 char key(' ');
 
 // For non-blocking keyboard inputs
@@ -70,23 +70,17 @@ int getch(void)
 int main(int argc, char** argv)
 {
   // Init ROS node
-  ros::init(argc, argv, "keyboard_control_node");
+  ros::init(argc, argv, "teleop_twist_keyboard");
   ros::NodeHandle nh;
 
   // Init cmd_vel publisher
-  ros::Publisher rc_override_pub = nh.advertise<mavros_msgs::OverrideRCIn>("/mavros/rc/override", 10);
+  ros::Publisher pub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
 
-  // 
-  int steer = 0;
-  int accel = 0;
+  // Create Twist message
+  geometry_msgs::Twist twist;
 
-  // Create Override message
-  mavros_msgs::OverrideRCIn rc_override_msg;
-
-  // Initial RC Override data
-  std::vector<int> rcOverride_channels{ 0,0,0,0,0,0,0,0 };
-
-  printf("\rCurrent: channel1 %d\tchannel3 %d | Awaiting command...\r", channel1, channel3);
+  printf("%s", msg);
+  printf("\rCurrent: speed %f\tturn %f | Awaiting command...\r", speed, turn);
 
   while(true){
 
@@ -94,18 +88,34 @@ int main(int argc, char** argv)
     key = getch();
 
     // If the key corresponds to a key in moveBindings
-    if (charToVectorMap.count(key) == 1)
+    if (moveBindings.count(key) == 1)
     {
       // Grab the direction data
-      steer = charToVectorMap[key][0];
-      accel = charToVectorMap[key][2];
+      x = moveBindings[key][0];
+      y = moveBindings[key][1];
+      z = moveBindings[key][2];
+      th = moveBindings[key][3];
 
-      printf("\rCurrent: channel1 %d\tchannel3 %d |  Last command: %c   ", channel1, channel3, key);
+      printf("\rCurrent: speed %f\tturn %f | Last command: %c   ", speed, turn, key);
     }
+
+    // Otherwise if it corresponds to a key in speedBindings
+    else if (speedBindings.count(key) == 1)
+    {
+      // Grab the speed data
+      speed = speed * speedBindings[key][0];
+      turn = turn * speedBindings[key][1];
+
+      printf("\rCurrent: speed %f\tturn %f | Last command: %c   ", speed, turn, key);
+    }
+
     // Otherwise, set the robot to stop
     else
     {
-      accel = 0;
+      x = 0;
+      y = 0;
+      z = 0;
+      th = 0;
 
       // If ctrl-C (^C) was pressed, terminate the program
       if (key == '\x03')
@@ -114,20 +124,20 @@ int main(int argc, char** argv)
         break;
       }
 
-      printf("\rCurrent: channel1 %d\tchannel3 %d |  Invalid command! %c", channel1, channel3, key);
+      printf("\rCurrent: speed %f\tturn %f | Invalid command! %c", speed, turn, key);
     }
 
-    // Update the RCOverride message
-    rcOverride_channels[0] += steer;
-    rcOverride_channels[2] += accel;
-    rcOverride_channels[0] = std::min(1900, std::max(rcOverride_channels[0], 1100));
-    rcOverride_channels[2] = std::min(1900, std::max(rcOverride_channels[2], 1100));
-    for (int i = 0; i < 8; ++i){ 
-      rc_override_msg.channels[i] = rcOverride_channels[i]; 
-    }
+    // Update the Twist message
+    twist.linear.x = x * speed;
+    twist.linear.y = y * speed;
+    twist.linear.z = z * speed;
+
+    twist.angular.x = 0;
+    twist.angular.y = 0;
+    twist.angular.z = th * turn;
 
     // Publish it and resolve any remaining callbacks
-    rc_override_pub.publish(rc_override_msg);
+    pub.publish(twist);
     ros::spinOnce();
   }
 

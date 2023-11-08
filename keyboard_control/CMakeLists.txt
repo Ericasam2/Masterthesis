@@ -15,11 +15,11 @@ catkin_package(
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
-  ncurses
+  # ncurses
 )
 
 # add_executable(keyboard_control_node src/keyboard_control_node.cpp)
-add_executable(keyboard_control_node src/keyboard_input_test.cpp)
+add_executable(keyboard_control_node src/keyboard_control_example.cpp)
 
 target_link_libraries(keyboard_control_node
   ${catkin_LIBRARIES}
