@@ -93,7 +93,7 @@ private:
     mavros_msgs::OverrideRCIn rc_override_msg;
     ros::Subscriber RCIn_sub;
     // KeyboardInput keyboard_reader;
-    char ch(' ');
+    char ch;
     std::map<char, std::vector<int>> charToVectorMap;
     std::vector<int> rcIn_channels{ 0,0,0,0,0,0,0,0 };
     std::vector<int> rcOverride_channels{ 0,0,0,0,0,0,0,0 };
