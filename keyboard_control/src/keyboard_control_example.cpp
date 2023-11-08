@@ -1,5 +1,4 @@
 #include <ros/ros.h>
-#include <geometry_msgs/Twist.h>
 
 #include <stdio.h>
 #include <unistd.h>
@@ -7,40 +6,13 @@
 
 #include <map>
 
-// Map for movement keys
-std::map<char, std::vector<float>> moveBindings
-{
-  {'i', {1, 0, 0, 0}},
-  {'o', {1, 0, 0, -1}},
-  {'j', {0, 0, 0, 1}},
-  {'l', {0, 0, 0, -1}},
-  {'u', {1, 0, 0, 1}},
-  {',', {-1, 0, 0, 0}},
-  {'.', {-1, 0, 0, 1}},
-  {'m', {-1, 0, 0, -1}},
-  {'O', {1, -1, 0, 0}},
-  {'I', {1, 0, 0, 0}},
-  {'J', {0, 1, 0, 0}},
-  {'L', {0, -1, 0, 0}},
-  {'U', {1, 1, 0, 0}},
-  {'<', {-1, 0, 0, 0}},
-  {'>', {-1, -1, 0, 0}},
-  {'M', {-1, 1, 0, 0}},
-  {'t', {0, 0, 1, 0}},
-  {'b', {0, 0, -1, 0}},
-  {'k', {0, 0, 0, 0}},
-  {'K', {0, 0, 0, 0}}
-};
-
 // Map for speed keys
-std::map<char, std::vector<float>> speedBindings
+std::map<char, std::vector<float>> charToVectorMap
 {
-  {'q', {1.1, 1.1}},
-  {'z', {0.9, 0.9}},
-  {'w', {1.1, 1}},
-  {'x', {0.9, 1}},
-  {'e', {1, 1.1}},
-  {'c', {1, 0.9}}
+  {'w', {0, 0, 10, 0, 0, 0, 0, 0}},
+  {'a', {-10, 0, 0, 0, 0, 0, 0, 0}},
+  {'s', {0, 0, -10, 0, 0, 0, 0, 0}},
+  {'d', {10, 0, 0, 0, 0, 0, 0, 0}}
 };
 
 // Reminder message
@@ -49,33 +21,19 @@ const char* msg = R"(
 Reading from the keyboard and Publishing to Twist!
 ---------------------------
 Moving around:
-   u    i    o
-   j    k    l
-   m    ,    .
+        w     
+   a    s    d
 
-For Holonomic mode (strafing), hold down the shift key:
----------------------------
-   U    I    O
-   J    K    L
-   M    <    >
-
-t : up (+z)
-b : down (-z)
 
 anything else : stop
-
-q/z : increase/decrease max speeds by 10%
-w/x : increase/decrease only linear speed by 10%
-e/c : increase/decrease only angular speed by 10%
 
 CTRL-C to quit
 
 )";
 
 // Init variables
-float speed(0.5); // Linear velocity (m/s)
-float turn(1.0); // Angular velocity (rad/s)
-float x(0), y(0), z(0), th(0); // Forward/backward/neutral direction vars
+int channel1(1500);
+int channel3(1500);
 char key(' ');
 
 // For non-blocking keyboard inputs
@@ -110,17 +68,20 @@ int getch(void)
 int main(int argc, char** argv)
 {
   // Init ROS node
-  ros::init(argc, argv, "teleop_twist_keyboard");
+  ros::init(argc, argv, "keyboard_control_node");
   ros::NodeHandle nh;
 
   // Init cmd_vel publisher
-  ros::Publisher pub = nh.advertise<geometry_msgs::Twist>("cmd_vel", 1);
+  ros::Publisher rc_override_pub = nh.advertise<mavros_msgs::OverrideRCIn>("/mavros/rc/override", 10);
 
-  // Create Twist message
-  geometry_msgs::Twist twist;
+  // Create Override message
+  mavros_msgs::OverrideRCIn rc_override_msg;
 
-  printf("%s", msg);
-  printf("\rCurrent: speed %f\tturn %f | Awaiting command...\r", speed, turn);
+  // Initial RC Override data
+  std::vector<int> rcOverride_channels{ 0,0,0,0,0,0,0,0 };
+
+  printf("%s", rc_override_msg);
+  printf("\rCurrent: channel1 %d\tchannel3 %d | Awaiting command...\r", channel1, channel3);
 
   while(true){
 
@@ -128,34 +89,18 @@ int main(int argc, char** argv)
     key = getch();
 
     // If the key corresponds to a key in moveBindings
-    if (moveBindings.count(key) == 1)
+    if (charToVectorMap.count(key) == 1)
     {
       // Grab the direction data
-      x = moveBindings[key][0];
-      y = moveBindings[key][1];
-      z = moveBindings[key][2];
-      th = moveBindings[key][3];
+      steer = charToVectorMap[ch][0];
+      accel = charToVectorMap[ch][2];
 
-      printf("\rCurrent: speed %f\tturn %f | Last command: %c   ", speed, turn, key);
+      printf("\rCurrent: channel1 %d\tchannel3 %d |  Last command: %c   ", channel1, channel3, key);
     }
-
-    // Otherwise if it corresponds to a key in speedBindings
-    else if (speedBindings.count(key) == 1)
-    {
-      // Grab the speed data
-      speed = speed * speedBindings[key][0];
-      turn = turn * speedBindings[key][1];
-
-      printf("\rCurrent: speed %f\tturn %f | Last command: %c   ", speed, turn, key);
-    }
-
     // Otherwise, set the robot to stop
     else
     {
-      x = 0;
-      y = 0;
-      z = 0;
-      th = 0;
+      accel = 0;
 
       // If ctrl-C (^C) was pressed, terminate the program
       if (key == '\x03')
@@ -164,20 +109,20 @@ int main(int argc, char** argv)
         break;
       }
 
-      printf("\rCurrent: speed %f\tturn %f | Invalid command! %c", speed, turn, key);
+      printf("\rCurrent: channel1 %d\tchannel3 %d |  Invalid command! %c", channel1, channel3, key);
     }
 
-    // Update the Twist message
-    twist.linear.x = x * speed;
-    twist.linear.y = y * speed;
-    twist.linear.z = z * speed;
-
-    twist.angular.x = 0;
-    twist.angular.y = 0;
-    twist.angular.z = th * turn;
+    // Update the RCOverride message
+    rcOverride_channels[0] += steer;
+    rcOverride_channels[2] += accel;
+    rcOverride_channels[0] = std::min(1900, std::max(rcOverride_channels[0], 1100));
+    rcOverride_channels[2] = std::min(1900, std::max(rcOverride_channels[2], 1100));
+    for (int i = 0; i < 8; ++i){ 
+      rc_override_msg.channels[i] = rcOverride_channels[i]; 
+    }
 
     // Publish it and resolve any remaining callbacks
-    pub.publish(twist);
+    rc_override_pub.publish(rc_override_msg);
     ros::spinOnce();
   }
 
