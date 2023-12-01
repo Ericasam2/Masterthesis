@@ -195,3 +195,21 @@ lower bound = 1100
 upper bound = 1900
 ```
 Now I am trying to add `arming` into the control program, I can call arming with the keyboard "," or "."
+
+# Dialogue 1/12/2023
+## The mapping from PWM to steering angle / longitudinal velocity
+* The mapping from PWM to steering angle can be directly measured:  pick 10 different PWM signals and corresponding steering angle to check the relation.
+* The mapping from PWM to longitudinal velocity: we need the Motion Capture System to measure that.
+
+## The lateral controller design:
+For the path following, the lateral controller is needed
+* objective:
+  * minimize the heading error and cross-track error
+  * The limitations of the vehicle need to be satisfied: steering angle, lateral dynamics ...
+* error:
+  * heading error: the difference between the vehicle heading angle and the target path orientation. (both measured in global coordinates)
+  * cross-track error: the distance between the reference point on the vehicle and the target path.
+* Controller:
+  * Pure-pursuit controller
+  * Stanly controller
+  * MPC controller
