@@ -56,7 +56,7 @@ rosinstall_generator --upstream mavros | tee -a /tmp/mavros.rosinstall
 - git:
     local-name: mavlink
     uri: https://github.com/mavlink/mavlink-gbp-release.git
-    version: 2016.10.10
+    version: release/kinetic/mavlink/2016.10.10-0
 
 - git:
     local-name: mavros
