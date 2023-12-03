@@ -213,3 +213,13 @@ For the path following, the lateral controller is needed
   * Pure-pursuit controller
   * Stanly controller
   * MPC controller
+    
+# Dialogue 3/12/2023
+## Singularity
+Install singularity:
+
+Build an image from docker:
+Follow the instructions from the [official guide](https://docs.sylabs.io/guides/3.0/user-guide/build_a_container.html)
+```sudo singularity build --sandbox kinetic.sif docker://yabin/ros_kinetic_desktop_full```
+ 
+    
