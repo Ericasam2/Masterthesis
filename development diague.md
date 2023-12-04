@@ -221,5 +221,11 @@ Install singularity:
 Build an image from docker:
 Follow the instructions from the [official guide](https://docs.sylabs.io/guides/3.0/user-guide/build_a_container.html)
 ```sudo singularity build --sandbox kinetic.sif docker://yabin/ros_kinetic_desktop_full```
- 
+
+To start the container, run the following command:
+
+```
+sudo singularity shell -w --hostname 192.168.0.100 kinetic.sif/ hostname
+```
+Substitute the argument `192.168.0.100` with the 
     
