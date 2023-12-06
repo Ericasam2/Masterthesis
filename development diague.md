@@ -227,5 +227,19 @@ To start the container, run the following command:
 ```
 sudo singularity shell -w --hostname 192.168.0.100 kinetic.sif/ hostname
 ```
-Substitute the argument `192.168.0.100` with the 
-    
+Substitute the argument `192.168.0.100` with your host machine IP address
+
+```
+sudo singularity shell -w --hostname 192.168.0.100 --bind ~/to_vm/:/root/from_host/ kinetic.sif/ hostname
+```
+Here we bind one folder `~/to_vm/` to the folder in the container `/root/from_host/`
+
+```bash
+source ~/catkin_ws/devel/setup.bash
+
+```
+
+```
+cp -r ~/from_host/keyboard_control/ ~/catkin_ws/src/
+```
+Use the command to update the file in the ROS workspace
