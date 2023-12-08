@@ -243,3 +243,38 @@ source ~/catkin_ws/devel/setup.bash
 cp -r ~/from_host/keyboard_control/ ~/catkin_ws/src/
 ```
 Use the command to update the file in the ROS workspace
+
+# Dialogue 8/12/2023
+## Simulator
+When building the simulation environment with `PX4 model` and `Gazebo-11` environment using the command:
+```
+make px4_sitl gazebo_rover
+```
+I always encounter a **linker** problem:
+```bash
+fatal error: opencv2/aruco.hpp: no such file or directory
+```
+the way to solve it is through:
+
+In file `/home/samgao1999/PX4-Autopilot/Tools/simulation/gazebo-classic/sitl_gazebo-classic/CMakeLists.txt`
+Add the path of the opencv4 `/usr/local/include/opencv4` to the configuration, make sure the `include_directories` look like this:
+```
+include_directories(
+  include
+  ${Boost_INCLUDE_DIR}
+  ${CMAKE_CURRENT_BINARY_DIR}
+  ${EIGEN3_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIRS}/eigen3	# Workaround for Eigen3
+  ${GAZEBO_INCLUDE_DIRS}
+  ${GAZEBO_MSG_INCLUDE_DIRS}
+  ${MAVLINK_INCLUDE_DIRS}
+  ${MAVLINK_INCLUDE_DIRS}/mavlink/v2.0 # Workaround for "fatal error: development/mavlink.h: No such file or directory"
+  ${OGRE_INCLUDE_DIRS}
+  ${OGRE_INCLUDE_DIRS}/Paging		# Workaround for "fatal error: OgrePagedWorldSection.h: No such file or directory"
+  # ${OpenCV_INCLUDE_DIRS}
+  /usr/local/include/opencv4
+  ${OpticalFlow_INCLUDE_DIRS}
+  ${TinyXML_INCLUDE_DIRS}
+  )
+```
+The reason is that the version of `opencv2` and `opencv4` is colliding, the cmake cannot find the right header file under `opencv4/opencv2`. 
