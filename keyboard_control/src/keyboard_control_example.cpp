@@ -5,6 +5,7 @@
 #include <unistd.h>
 #include <termios.h>
 #include <mavros_msgs/OverrideRCIn.h>
+#include <mavros_msgs/CommandBool.h>
 
 #include <map>
 
@@ -83,7 +84,7 @@ int main(int argc, char** argv)
   // Init cmd_vel publisher
   ros::Publisher rc_override_pub = nh.advertise<mavros_msgs::OverrideRCIn>("/mavros/rc/override", 10);
   // Init service client
-  ros::ServiceClient client = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/arming");
+  ros::ServiceClient arming_client_ = nh.serviceClient<mavros_msgs::CommandBool>("/mavros/cmd/arming");
 
 
   // Init the incremental variables
@@ -124,8 +125,9 @@ int main(int argc, char** argv)
     }
     else if (CommandMap.count(key) == 1)
     {
-      mavros_msgs::CommandBool srv;
-      srv.request.arming = CommandMap[key]; // Set the request data
+      mavros_msgs::CommandBool arm_cmd_;
+      arm_cmd_.request.value = CommandMap[key]; // Set the request data
+      arming_client_.call(arm_cmd_);
       if (CommandMap[key]) { printf("\rCurrent: Arming  |  Last command: %c   ", key); }
       else { printf("\rCurrent: DisArming  |  Last command: %c   ", key); }
     }
