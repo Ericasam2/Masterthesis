@@ -277,4 +277,22 @@ include_directories(
   ${TinyXML_INCLUDE_DIRS}
   )
 ```
+
+# Dialogue 18/12/2023
+## Simulator
+We can open the simulator in the following way from [ROS with Gazebo Classic Simulation](https://docs.px4.io/main/en/simulation/ros_interface.html)
+```
+cd <PX4-Autopilot_clone>
+DONT_RUN=1 make px4_sitl_default gazebo-rover
+source ~/catkin_ws/devel/setup.bash    # (optional)
+source Tools/simulation/gazebo-classic/setup_gazebo.bash $(pwd) $(pwd)/build/px4_sitl_default
+export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:$(pwd)
+export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:$(pwd)/Tools/simulation/gazebo-classic/sitl_gazebo-classic
+roslaunch px4 mavros_posix_sitl.launch
+```
+Open a new terminal and run the QGroundControl:
+```
+cd <Download>
+./QGroundControl.AppImage
+```
 The reason is that the version of `opencv2` and `opencv4` is colliding, the cmake cannot find the right header file under `opencv4/opencv2`. 
