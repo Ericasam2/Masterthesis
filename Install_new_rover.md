@@ -1,6 +1,71 @@
 ## Description
 The file is an introduction to how to prepare the software and hardware of the rover remote control system. 
 
+## Singularity
+Singularity is a container platform. It allows you to create and run containers that package up pieces of software in a way that is portable and reproducible. 
+
+### Set-up singularity
+The singularity provided here is `singularity-ce 3.10.2`, the files are available in the following GitHub repository:
+[SingularityCE 3.10.2](https://github.com/sylabs/singularity/releases/tag/v3.10.2)
+
+The instruction for singularity download and install is provided here:
+[Installing SingularityCE](https://docs.sylabs.io/guides/latest/admin-guide/installation.html)
+
+Depending on your OS, the downloading is provided as follows:
+
+**Ubuntu 18.04 / Linux Mint 19 / Elementary OS 5** \
+[singularity-ce_3.10.2-bionic_amd64.deb](https://github.com/sylabs/singularity/releases/download/v3.10.2/singularity-ce_3.10.2-bionic_amd64.deb)
+
+**Ubuntu 20.04/ Linux Mint 20 / Elementary OS 6** \
+[singularity-ce_3.10.2-focal_amd64.deb](https://github.com/sylabs/singularity/releases/download/v3.10.2/singularity-ce_3.10.2-focal_amd64.deb)
+
+**Ubuntu 22.04 / Linux Mint 21 / Elementary OS 7** \
+[singularity-ce_3.10.2-jammy_amd64.deb](https://github.com/sylabs/singularity/releases/download/v3.10.2/singularity-ce_3.10.2-jammy_amd64.deb)
+
+**Install and Test** 
+Install the `singularity` from source:
+```bash
+cd $HOME/Downloads
+sudo dpkg -i ./singularity-ce_3.10.2-<your_distribution>_amd64.deb
+sudo apt install -f
+```
+
+Open a new terminal and test if the installation is successful 
+```bash
+singularity --version
+```
+
+The output should be
+```bash
+singularity-ce version 3.10.2-XXXX
+```
+
+### Setup the image
+The image can be downloaded from the storage space in [Team - RC rover 2023](https://teams.microsoft.com/_?tenantId=096e524d-6929-4030-8cd3-8ab42de0887b#/school/FileBrowserTabApp/%E5%B8%B8%E8%A7%84?groupId=49107539-c634-4f20-9012-495b83cdc3aa&threadId=19:582ySj6s4WZVJOd7K0HRELjdM0qSSpRiVON46_yPR2o1@thread.tacv2&ctx=channel)
+
+**Open the container**
+To start the container, run the following command:
+
+```
+sudo singularity shell -w --hostname 192.168.0.100 kinetic.sif/ hostname
+```
+Substitute the argument `192.168.0.100` with your host machine IP address
+
+```
+sudo singularity shell -w --hostname 192.168.0.100 --bind ~/to_vm/:/root/from_host/ kinetic.sif/ hostname
+```
+Here we bind one folder `~/to_vm/` to the folder in the container `/root/from_host/`
+
+```bash
+source ~/catkin_ws/devel/setup.bash
+
+```
+
+```
+cp -r ~/from_host/keyboard_control/ ~/catkin_ws/src/
+```
+Use the command to update the file in the ROS workspace
+
 ## Prerequisite
 Ubuntu 16.04 \
 ROS kinetic \
