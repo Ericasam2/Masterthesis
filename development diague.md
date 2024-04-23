@@ -1,227 +1,73 @@
-# Dialogue 18/9/2023
+## Description
+The file is an introduction to how to prepare the software and hardware of the rover remote control system. 
 
-## 1. 18 channels → 8 channels
-
-I change the code in .msg file and rebuild the MAVROS, then I use the following test command:
-
-```
-rostopic pub -r 10 /maos/rc/override mavros_msgs/OverrideRCIn "channels: [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500]"
-```
-
-the ErleBrain give me the following feedback: *[ WARN] [1693328496.698021710]: RC override not supported by this FCU!*
-
-![Send RC signal and get warning RC override not supported by this FCU!](/home/samgao1999/桌面/thesis/2023-09-18%2016-15-05%20的屏幕截图.png)
-
-I might consider reinstall the older version of MAVROS
-
-In *mavros/mavros_msgs/SHANGELOG.rst*, there is an update suggests that Mavlink v2.0 accept RC_CHANNELS_OVERRIDE up to 18 channels. If the FCU_protocol version is 2.0,
-
-
-# Dialogue 20/9/2023
-## 1. Simulation launch
-[The launch procedure](https://docs.px4.io/main/en/simulation/ros_interface.html) shows that the simulation with MAVROS can be initialized with with the launch file:
-```
-cd <PX4-Autopilot_clone>
-roslaunch px4 mavros_posix_sitl.launch
-```
-Then the [takeoff procedure](https://masoudir.github.io/mavros_tutorial/Chapter1_ArduRover_with_CLI/Step2_How_to_Arm_and_Disarm/#arm-and-disarm)
-
-Terminal 1:
-```
-rosservice call /mavros/set_mode "custom_mode: 'OFFBOARD"
-rostopic pub /mavros/setpoint_position/local geometry_msgs/PoseStamped -r 20 "pose:
-  position:
-    x: 0.0
-    y: 0.0
-    z: 10.0"
-```
-Terminal 2:
-```
-rosservice call /mavros/cmd/arming True
-```  
-
-## 2. The version collision
-I try to subscribe the topic "/mavros/states", and the system give me the following warning:
-
-```
-[ERROR] [1693341196.359086204]: Client [/rostopic_20707_1695290724770] wants topic /mavros/state to have datatype/md5sum [mavros_msgs/State/ce783f756cab1193cb71ba9e90fece50], but our version has [mavros_msgs/State/9e3d873fae342c8f48a8bd64c53d991e]. Dropping connection.
-```
-
-Following the [Solution from Github](https://github.com/mavlink/mavros/issues/1517), it is important to downgrade the version of mavros/ mavlink/ mavros_msgs on my laptop. By checking the version on the erlebrain, I Find that:
-```
-erle@erle-brain:~ $ rosversilogErroron mavros
-0.18.3
-erle@erle-brain:~ $ rosversion mavlink
-2016.9.9
-erle@erle-brain:~ $ rosversion mavros_msgs
-0.18.3
-```
-
-The definition on **\<erlebrain\>**/mavros_msgs/msg/State.msg:
-```
-# Current autopilot state
-#
-# Known modes listed here:
-# http://wiki.ros.org/mavros/CustomModes
-
-std_msgs/Header header
-bool connected
-bool armed
-bool guided
-string mode
-```
-
-The definition on **\<laptop\>**/mavros_msgs/msg/State.msg:
-```
-# Current autopilot state
-#
-# Known modes listed here:
-# http://wiki.ros.org/mavros/CustomModes
-#
-# For system_status values
-# see https://mavlink.io/en/messages/common.html#MAV_STATE
-#
-
-std_msgs/Header header
-bool connected
-bool armed
-bool guided
-bool manual_input
-string mode
-uint8 system_status
-```
-
-I compare the code of MAVROS 0.19.0 and MAVROS 0.26.0 (the earliest version of mavros after melodic mavlink released), the main problem is that the log function is redefined in "#include \<mavconn/console_bridge_compat.h\>", if the code is regenerated, the current phase "catkin-build" problem may get fixed. 
+## Table of Contents <a name="outline"></a>
+1. [Table of Contents](#outline)
+2. [Container](#container)
+    - [Setup singularity](#set-up-singularity)
+    - [Setup image](#setup-the-image)
+3. [Prerequisite](#prerequisite)
+4. [Install Ubuntu](#install-ubuntu)
+5. [Install ROS](#install-ros)
+6. [Install MAVLINK and MAVROS](#install-mavlink-and-mavros)
+7. [Connecting to ErleBrain](#connecting-to-erlebrain)
+8. [Host machine and local network](#host-machine-and-local-network)
+9. [ROS configurations](#ros-configurations)
+10. [Low-level Control and Communication](#low-level-control-and-communication)
+      -  [Calibration](#calibration)
+      -  [Send RC signal](#using-terminal-to-send-rc-signal)
+      -  [Keyboard control](#keyboard-control)
+      -  [Data Communication & Acquisition](#data-communication--acquisition)
 
 
-# Dialogue 8/10/2023
-## Ubuntu 16.04
-I used the virtual machine to install the ubuntu 16.04 and install the history version of mavlink and mavros.
+## Container <a name="container"></a>
+**Singularity** is a container platform. It allows you to create and run containers that package up pieces of software in a way that is portable and reproducible. 
+
+### Set-up singularity <a name="singularity"></a>
+The singularity provided here is `singularity-ce 3.10.2`, the files are available in the following GitHub repository:
+[SingularityCE 3.10.2](https://github.com/sylabs/singularity/releases/tag/v3.10.2)
+
+The instruction for singularity download and install is provided here:
+[Installing SingularityCE](https://docs.sylabs.io/guides/latest/admin-guide/installation.html)
+
+Depending on your OS, the downloading is provided as follows:
+
+**Ubuntu 18.04 / Linux Mint 19 / Elementary OS 5** \
+[singularity-ce_3.10.2-bionic_amd64.deb](https://github.com/sylabs/singularity/releases/download/v3.10.2/singularity-ce_3.10.2-bionic_amd64.deb)
+
+**Ubuntu 20.04/ Linux Mint 20 / Elementary OS 6** \
+[singularity-ce_3.10.2-focal_amd64.deb](https://github.com/sylabs/singularity/releases/download/v3.10.2/singularity-ce_3.10.2-focal_amd64.deb)
+
+**Ubuntu 22.04 / Linux Mint 21 / Elementary OS 7** \
+[singularity-ce_3.10.2-jammy_amd64.deb](https://github.com/sylabs/singularity/releases/download/v3.10.2/singularity-ce_3.10.2-jammy_amd64.deb)
+
+**Install and Test** 
+Install the `singularity` from source:
 ```bash
-samgao1999@ubuntu:~$ rosversion mavlink
-2016.10.10
-samgao1999@ubuntu:~$ rosversion mavros
-0.18.3
+cd $HOME/Downloads
+sudo dpkg -i ./singularity-ce_3.10.2-<your_distribution>_amd64.deb
+sudo apt install -f
 ```
-## Network and connection
-And I changed some internet setup in both */etc/network/interfaces* and */etc/wpa_supplicant/home.conf*:
+
+Open a new terminal and test if the installation is successful 
 ```bash
-erle@erle-brain:~ $ cat /etc/network/interfaces
-# Please note that this file is written to be used with dhcpcd.
-# For static IP, consult /etc/dhcpcd.conf and 'man dhcpcd.conf'.
-
-auto lo
-iface lo inet loopback
-
-auto wlan0
-allow-hotplug wlan0
-iface wlan0 inet manual
-wpa-conf /etc/wpa_supplicant/home.conf
-
+singularity --version
 ```
 
+The output should be
 ```bash
-erle@erle-brain:~ $ cat /etc/wpa_supplicant/home.conf 
-network={
-	ssid="TP-LINK_ECE5"
-	#psk="setapassword"
-	psk=5b3ee93e6881321a6c5f00db4fe820c0993bd021e29e0ee8449de4a4f7ccd804
-}
+singularity-ce version 3.10.2-XXXX
 ```
 
-One problem I want to keep note of is that the erleBrain3 only has **2.4Gz** wifi network connection, the prevailing 5Gz signal cannot be used by it. Also, under school network **eduroam**, the network cannot be shared through *bridge mode* in VMware. The ideal way is to use a private network. 
-## PreArm issue
-In previous setup, I find there is version collision so that I cannot check the */mavros/state*, now I fix the problem and I can check the state of the erleBrain, now new problem arise, even if I publish command to topic */mavros/rc/override*, the */mavros/rc/in* still do not give me the ideal signal. Now I think it may related to the *arming* issue, the controller may needed to be armed to take off or receive signal, when I try to arm the controller, it gives me the error:
-```bash
-[ERROR] [1696607025.001099516]: FCU: PreArm: 3D Accel calibration needed
-```
-In the following experiment, I will try to use the GroundStation to control it. 
+### Setup the image <a name="image"></a>
+The image can be downloaded from the storage space in [Team - RC rover 2023](https://teams.microsoft.com/_?tenantId=096e524d-6929-4030-8cd3-8ab42de0887b#/school/FileBrowserTabApp/%E5%B8%B8%E8%A7%84?groupId=49107539-c634-4f20-9012-495b83cdc3aa&threadId=19:582ySj6s4WZVJOd7K0HRELjdM0qSSpRiVON46_yPR2o1@thread.tacv2&ctx=channel)
 
-# Dialogue 12/10/2023
-## some error report
-Every time I try to ssh connect to the device after I turn on the ```~/apm.sh```, the terminal will report:
-```bash
-samgao1999@ubuntu:~$ ssh erle@192.168.1.106
-ssh: connect to host 192.168.1.106 port 22: No route to host
+Extract the image to a directory:
 ```
-I need to restart the erlebrain to reconnect to it. 
-
-# Dialogue 19/10/2023
-## APM_planner2
-The basic workflow of connecting the erleBrain3 with host Machine:
-**On erleBrain3**
-```bash
-sudo ~/apm.sh
+tar -xvf kinetic.tar.gz -C <path_to_your_directory>
 ```
 
-In */opt/ros/kinetic/setup-mavros.bash* add the last line:
-```
-roslaunch mavros apm.launch fcu_url:="udp://:6001@" gcs_url:="udp://192.168.1.106:9000@192.168.1.105:6000?ids=255,252,1"
-```
-Where *192.168.1.106* is erleBrain ip address and *192.168.1.105* is host machine ip address. 
-```bash
-/opt/ros/kinetic/setup-mavros.bash
-```
-Start the apm_planner:
-```
-~/apm_planner/apm_planner/release/apmplanner2 
-```
- ## The RC is not started
- When I try to calibrate the RC, I find there is an error *Radio Control is not active or turned on*. And at the same time the `3D Accelerometer Calibration` cannot be done without the rover. 
- After checking some sources online [APM_Planner2 set up for erle-robotics](https://erlerobotics.gitbooks.io/erle-robotics-erle-brain-a-linux-brain-for-drones/content/en/GCS/apmplanner.html#configuring-simple-mode) and [APM 2.5 Ardupilot controller- setup guide](https://www.youtube.com/watch?v=QAFdHnoae0s&ab_channel=75echo), I find we may need the hardware eg. *Radio-Control Receiver* and *Radio-Control Sender*. Also, the network problem in the lab shall be fixed. 
-
-# Dialogue 26/10/2023
-## Environment Setup
-I set another modem in the lab, and connected the laptop, virtue machine, and erleBrain to the modem, This way I created a local network. 
-The Segment and IP address are:
-```bash
-Host machine: 192.168.0.103
-ErleBrain: 192.168.0.101
-```
-## the bound Remote Control signal
-if we publish data on the topic `/mavros/rc/override mavros_msgs/OverriRCIn`, and then we subscribe the topic `/mavros/rc/override mavros_msgs/out`, we can observe that only two channels are valid:
-**Prerequisite: Armed and Manual**
-* ch1 is bounded by [1100, 1900]
-* ch3 is bounded by [1208, 1900] 
-Use `rostopic pub -1 /mavros/rc/override mavros_msgs/OverrideRCIn "channels: [0,0,0,0,0,0,0,0]"` to enable the remote control 
-
-# Dialogue 8/11/2023
-## Software
-Now I am adopting the `teleop_twist_keyboard_cpp` method to control the rover with the keyboard. 
-I am required to take the **sampling time** into consideration. So Even if the sampling time is changing, I still need to control the wheel to go through the whole control span with a certain amount of time. 
-```
-T = 1[s]
-lower bound = 1100
-upper bound = 1900
-```
-Now I am trying to add `arming` into the control program, I can call arming with the keyboard "," or "."
-
-# Dialogue 1/12/2023
-## The mapping from PWM to steering angle / longitudinal velocity
-* The mapping from PWM to steering angle can be directly measured:  pick 10 different PWM signals and corresponding steering angle to check the relation.
-* The mapping from PWM to longitudinal velocity: we need the Motion Capture System to measure that.
-
-## The lateral controller design:
-For the path following, the lateral controller is needed
-* objective:
-  * minimize the heading error and cross-track error
-  * The limitations of the vehicle need to be satisfied: steering angle, lateral dynamics ...
-* error:
-  * heading error: the difference between the vehicle heading angle and the target path orientation. (both measured in global coordinates)
-  * cross-track error: the distance between the reference point on the vehicle and the target path.
-* Controller:
-  * Pure-pursuit controller
-  * Stanly controller
-  * MPC controller
-    
-# Dialogue 3/12/2023
-## Singularity
-Install singularity:
-
-Build an image from docker:
-Follow the instructions from the [official guide](https://docs.sylabs.io/guides/3.0/user-guide/build_a_container.html)
-```sudo singularity build --sandbox kinetic.sif docker://yabin/ros_kinetic_desktop_full```
-
+**Open the container** \
 To start the container, run the following command:
 
 ```
@@ -229,70 +75,397 @@ sudo singularity shell -w --hostname 192.168.0.100 kinetic.sif/ hostname
 ```
 Substitute the argument `192.168.0.100` with your host machine IP address
 
+**Bind the container with Native OS** \
+Only the `$home` directory (i.e. `/root`) is linked to the native OS by default, to be able to link to other files in the image change `~/catkin_ws/src/keyboard_control` to the location of the code in your computer, use:
 ```
-sudo singularity shell -w --hostname 192.168.0.100 --bind ~/to_vm/:/root/from_host/ kinetic.sif/ hostname
+sudo singularity shell -w --hostname 192.168.0.100 --bind ~/catkin_ws/src/keyboard_control:/app/catkin_ws/src/keyboard_control kinetic.sif/ hostname
 ```
-Here we bind one folder `~/to_vm/` to the folder in the container `/root/from_host/`
+Here we bind one folder `~/catkin_ws/src/keyboard_control` to the folder in the container `/app/catkin_ws/src/keyboard_control`
 
+**Source the file** 
 ```bash
 source ~/catkin_ws/devel/setup.bash
-
 ```
 
-```
-cp -r ~/from_host/keyboard_control/ ~/catkin_ws/src/
-```
-Use the command to update the file in the ROS workspace
 
-# Dialogue 8/12/2023
-## Simulator
-When building the simulation environment with `PX4 model` and `Gazebo-11` environment using the command:
-```
-make px4_sitl gazebo_rover
-```
-I always encounter a **linker** problem:
+
+## Prerequisite <a name="prerequisite"></a>
+
+Ubuntu 16.04 \
+ROS kinetic \
+MAVROS 0.18.3 \
+MAVLINK 2016.10.10 
+
+## Install Ubuntu <a name="ubuntu"></a>
+
+1. Install Ubuntu 16.04: 
+   * The ubuntu can be ran on virtual machine (eg. VMWARE)
+   * you can follow the [install guide](https://linuxconcept.com/how-to-install-ubuntu-16-04-in-vmware-workstation/) to install the ubuntu. 
+2. Verify Ubuntu Installation:
+   * After installation, open the terminal with `ctrl` + `alt` + `t` 
+   * Enter the following command to verify the Ubuntu version:
+    ```bash
+    lsb_release -a
+    ```
+    * The terminal should display the Ubuntu version.
+
+The reason for choosing Ubuntu 16.04 is mainly due to compatibility with MAVLINK and MAVROS versions.
+
+## Install ROS<a name="ros"></a>
+1. Install ROS Kinetic:
+   * The ROS can be installed based on the [Ubuntu install of ROS Kinetic](https://wiki.ros.org/kinetic/Installation/Ubuntu)
+2. Verify ROS Installation:
+   * After the installation, open the terminal and enter the following command:
+    ```bash
+    rosversion -d
+    ```
+   * The terminal should display `kinetic`, indicating a successful ROS installation.
+
+## Install MAVLINK and MAVROS
+The MAVROS and MAVLINK can be installed using `wget` webtool. The following installation guide are mainly based on the [PX4 USER GUIDE](https://docs.px4.io/main/en/ros/mavros_installation.html):
+
+### Create a catkin workspace and initialize
+1. Install the dependencies:
 ```bash
-fatal error: opencv2/aruco.hpp: no such file or directory
+sudo apt-get install python-catkin-tools python-rosinstall-generator -y
 ```
-the way to solve it is through:
+2. The workspace in the guide is located in `~/catkin_ws`, change to your preferred folder. 
+```bash
+mkdir -p ~/catkin_ws/src
+cd ~/catkin_ws
+catkin init
+wstool init src
+```
+3. Retrive the version of MAVLink and MAVROS:
+```bash
+rosinstall_generator --rosdistro kinetic mavlink | tee /tmp/mavros.rosinstall
+rosinstall_generator --upstream mavros | tee -a /tmp/mavros.rosinstall
+```
+4. Edit the file `/tmp/mavros.rosinstall`
+```bash
+- git:
+    local-name: mavlink
+    uri: https://github.com/mavlink/mavlink-gbp-release.git
+    version: release/kinetic/mavlink/2016.10.10-0
 
-In file `/home/samgao1999/PX4-Autopilot/Tools/simulation/gazebo-classic/sitl_gazebo-classic/CMakeLists.txt`
-Add the path of the opencv4 `/usr/local/include/opencv4` to the configuration, make sure the `include_directories` look like this:
+- git:
+    local-name: mavros
+    uri: https://github.com/mavlink/mavros.git
+    version: 0.18.3
 ```
-include_directories(
-  include
-  ${Boost_INCLUDE_DIR}
-  ${CMAKE_CURRENT_BINARY_DIR}
-  ${EIGEN3_INCLUDE_DIRS}
-  ${EIGEN3_INCLUDE_DIRS}/eigen3	# Workaround for Eigen3
-  ${GAZEBO_INCLUDE_DIRS}
-  ${GAZEBO_MSG_INCLUDE_DIRS}
-  ${MAVLINK_INCLUDE_DIRS}
-  ${MAVLINK_INCLUDE_DIRS}/mavlink/v2.0 # Workaround for "fatal error: development/mavlink.h: No such file or directory"
-  ${OGRE_INCLUDE_DIRS}
-  ${OGRE_INCLUDE_DIRS}/Paging		# Workaround for "fatal error: OgrePagedWorldSection.h: No such file or directory"
-  # ${OpenCV_INCLUDE_DIRS}
-  /usr/local/include/opencv4
-  ${OpticalFlow_INCLUDE_DIRS}
-  ${TinyXML_INCLUDE_DIRS}
-  )
+5. Create workspace & deps
+```bash
+wstool merge -t src /tmp/mavros.rosinstall
+wstool update -t src -j4
+rosdep install --from-paths src --ignore-src -y
+```
+6. Install [GeographicLib](https://geographiclib.sourceforge.io/) datasets:
+```bash
+./src/mavros/mavros/scripts/install_geographiclib_datasets.sh
 ```
 
-# Dialogue 18/12/2023
-## Simulator
-We can open the simulator in the following way from [ROS with Gazebo Classic Simulation](https://docs.px4.io/main/en/simulation/ros_interface.html)
+7. Build source
+```bash
+catkin build
 ```
-cd <PX4-Autopilot_clone>
-DONT_RUN=1 make px4_sitl_default gazebo-rover
-source ~/catkin_ws/devel/setup.bash    # (optional)
-source Tools/simulation/gazebo-classic/setup_gazebo.bash $(pwd) $(pwd)/build/px4_sitl_default
-export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:$(pwd)
-export ROS_PACKAGE_PATH=$ROS_PACKAGE_PATH:$(pwd)/Tools/simulation/gazebo-classic/sitl_gazebo-classic
-roslaunch px4 mavros_posix_sitl.launch
+
+8. Make sure that you use setup.bash or setup.zsh from workspace
 ```
-Open a new terminal and run the QGroundControl:
+source devel/setup.bash
 ```
-cd <Download>
-./QGroundControl.AppImage
+
+## Connecting to ErleBrain
+
+There are several methods to connect to the ErleBrain: Hotspot, Ethernet cable, Wi-Fi, and using a monitor and keyboard. This guide will explain how to connect via cable and Wi-Fi.
+
+### Using an Ethernet Cable
+
+**Platform: Windows 10**
+
+1. **Connect ErleBrain to Your Computer**:
+   - Plug the Ethernet cable into the ErleBrain and your computer.
+   - Observe the Ethernet Network port on the ErleBrain; it should be flashing. If it's not flashing, consider using the monitor and keyboard method (explained below).
+
+2. **Share the Network Connection**:
+   - Access the "Network Connections" on your Windows machine.
+   - Right-click on the Ethernet connection and select "Properties."
+   - Click on the "Sharing" tab.
+   - Enable sharing and choose the Ethernet port that the ErleBrain is using.
+
+3. **Check the IP Address of ErleBrain**:
+   - Open the Windows terminal and enter the command: `arp -a`.
+   - Find the IP address of the ErleBrain; typically, it's a dynamic address.
+
+4. **Connecting via SSH**:
+   - Use the following credentials to connect to the ErleBrain via SSH:
+     ```bash
+     Username: erle
+     Password: holaerle
+     ```
+   - You will have access to a terminal to interact with the ErleBrain using SSH.
+
+### Connecting the ErleBrain to Wi-Fi
+
+1. **Create a WPA Passphrase**:
+   - Generate a WPA passphrase for the Wi-Fi network you want to connect to. Replace `HostPC` with the network name and `holahost` with the corresponding password.
+   ```bash
+    network={
+            ssid="HostPC"
+            #psk="holahost"
+            psk=c80d81ddbd0c2fb867164fdc93bceb1a76075d7c4ba635e8faa08f4d8f394312
+    }
+   ```
+   - Save the content above to a file in `/etc/wpa_supplicant/`, naming it as desired but ending with `.conf`. You can edit the file using:
+
+     ```bash
+     sudo nano /etc/wpa_supplicant/your-chosen-name.conf
+     ```
+2. **Edit the `interfaces` File**:
+   - Open the `interfaces` file for editing using the following command:
+
+     ```bash
+     sudo nano /etc/network/interfaces
+     ```
+
+   - Replace existing network configurations with the following lines:
+
+     ```bash
+     auto lo
+     iface lo inet loopback
+
+     auto wlan0
+     allow-hotplug wlan0
+     iface wlan0 inet manual
+     wpa-conf /etc/wpa_supplicant/your-chosen-name.conf
+     ```
+
+   Make sure to comment out any other network configurations.
+
+3. **Restart ErleBrain**:
+   - After making these changes, restart the ErleBrain, and it will automatically connect to the Wi-Fi network.
+
+**Note**: ErleBrain can connect to Ethernet and Wi-Fi simultaneously.
+
+### Monitor&keyboard:
+
+In some case when, 
+ * the ethernet cable is not enabled on the erleBrain;
+ * The network the laptop is using cannot be shared to the erleBrain;
+ * There is no available Wifi network (eg. `eduroam`) you can use.
+
+You need to connect the erleBrain with the monitor and keyboard with the HDMI cable and USB cable.
+
+## Host machine and local network
+
+### Host Machine
+To configure your host machine for network connectivity in VMware, follow these steps, which are based on [VMware Docs](https://docs.vmware.com/en/VMware-Workstation-Pro/17/com.vmware.ws.using.doc/GUID-826323AD-D014-475D-8909-DFA73B5A3A57.html):
+1. Select your virtual machine and go to VM > Settings.
+2. On the Hardware tab, select Network Adapter.
+3. Choose "Bridged: Connected directly to the physical network."
+4. Select "Replicate physical network connection state."
+5. Save the changes.
+6. In your virtual machine, open the terminal and type the command `ifconfig`. You will see your IP address, typically in the form of `192.168.*.*`.
+
+**Note**: Some networks, like `eduroam`, may not allow VMware to have a unique IP address. In such cases, you can establish a local network as described below.
+
+
+### Local Network
+To create a local network, follow these steps:
+
+1. You need your personal modem to create a local network.
+2. Power up the modem and connect both the laptop and the ErleBrain to the local network.
+
+### Tests
+To ensure that your network connection is working correctly, you can perform the following tests:
+
+**On the Host Machine (Ubuntu 16.04 in the Virtual Machine)**:
+Run the following command, replacing `192.168.0.101` with your ErleBrain's IP address:
+```bash
+ping 192.168.0.101
 ```
-The reason is that the version of `opencv2` and `opencv4` is colliding, the cmake cannot find the right header file under `opencv4/opencv2`. 
+
+**On ErleBrain**: Run the following command, replacing `192.168.0.102` with your ErleBrain's IP address:
+```bash
+ping 192.168.0.102
+```
+If the `ping` is successful both ways, the connection is established, and we can do the further MAVLink test. 
+
+### Some further reading
+* The reason we want to create a local network and connect all our devices `HostMachine` and `ErleBrain` to it is that, we want to make sure all devices can communicate with each other. 
+* We try to put the device under the same network segmentation, we can refer to [what-is-LAN](https://www.cisco.com/c/en/us/products/switches/what-is-a-lan-local-area-network.html#~what-it-is) for some basic understanding. 
+
+## ROS configurations
+### Host machine
+The IP address of the host machine need to be specified when we start the roscore:
+```bash
+sudo nano ~/.bashrc
+```
+And append the following context to the `.bashrc` file, change the `192.168.0.101` to your own HostMachine IP address:
+```bash
+#ROS
+export ROS_MASTER_URI=http://192.168.0.101:11311/ # hostmachine IP
+export ROS_IP=192.168.0.101 # hostmachine IP
+export ROS_HOSTNAME=192.168.0.101
+```
+Save the file and exit, remember to source the `.bashrc` file:
+```bash
+source ~/.bashrc
+```
+Remember to source the ROS configuration file:
+```bash
+source /opt/ros/kinetic/setup.bash
+```
+### ErleBrain
+```bash
+sudo nano ~/.bashrc
+```
+And append the following context to the `.bashrc` file, change the `192.168.0.102` to your own ErleBrain IP address:
+```bash
+#ROS
+export ROS_MASTER_URI=http://192.168.0.101:11311/ # hostmachine IP
+export ROS_IP=192.168.0.102 # erlebrain IP
+export ROS_HOSTNAME=192.168.0.102
+```
+Save the file and exit, remember to source the `.bashrc` file:
+```bash
+source ~/.bashrc
+```
+Change the settings of MAVROS using 
+```bash
+sudo nano /opt/ros/kinetic/setup-mavros.bash
+```
+change the content to 
+```bash
+#!/usr/bin/env bash
+# generated from catkin/cmake/templates/setup.bash.in
+
+CATKIN_SHELL=bash
+
+# source setup.sh from same directory as this file
+_CATKIN_SETUP_DIR=$(builtin cd "`dirname "${BASH_SOURCE[0]}"`" > /dev/null && pwd)
+. "$_CATKIN_SETUP_DIR/setup.sh"
+
+# wait a bit for roscore to stabilize
+sleep 3
+
+# Launch mavros with the udp bridge
+# rosrun mavros mavros_node _fcu_url:="udp://:6001@" _gcs_url:="udp://10.0.0.1:9000@10.0.0.2:6000?ids=1,255,252"
+
+roslaunch mavros apm.launch fcu_url:="udp://:6001@"
+
+```
+Remember to source the ROS configuration file:
+```bash
+source /opt/ros/kinetic/setup.bash
+```
+
+### Test
+1. On hostMachine, open terminal and start ROS 
+   ```bash
+   roscore
+   ```
+2. On erleBrain, launch mavros using
+   ```bash
+   /opt/ros/kinetic/setup-mavros.bash
+   ```
+3. On erleBrain, open a new terminal and enable the apm setting
+   ```bash
+   sudo ~/apm.sh
+   ```
+4. To make sure if the devices are connected, you can run the command to test:
+    ```bash
+    rostopic echo -n1 /diagnostics
+    ```
+    If everything goes well the output would be the following:
+    ```
+    header: 
+    seq: 17
+    stamp: 
+        secs: 1573737275
+        nsecs: 972295800
+    frame_id: ''
+    status: 
+    - 
+        level: 0
+        name: "leader_mavros: FCU connection"
+        message: "connected"
+        hardware_id: "udp://:6001@"
+    ```
+
+## Some hardware issue
+![The seriel ports of ErleBrain](media/Erle-Brain2_dimensiones.jpg)
+* Many funtions of the erleBrain are hardware-based, which means the seriel leads need to be connected to other hardware to enble the correspending functions.
+* To enable the `Radio Control`, 
+  * the `PPM-SUM input channel` need to be connected to `RC receiver`;
+  * the `PPM-SUM input channel 1` need to be connected to front motor and the `PPM-SUM input channel 3` need to be connected to back motor;
+  * the `RC transimitter` need to be powered and turned on;
+  * When the `RC receiver` is flasing, the switch on the `receiver` need to be pressed and turned on.
+* TBD
+  
+## Apm planner 2
+The APM planner 2 can be used to interface with the ErleBrain with graphical interfaces. The software helps you with the calibration, monitoring and control of the erleBrain and rover. 
+
+### Installation: 
+We can follow the [Installing APM Planner for Linux](https://ardupilot.org/planner2/docs/installation-for-linux.html) to install the apm planner. 
+
+### ErleBrain:
+We need to edit the `opt/ros/kinetic/setup-mavros.bash`
+```bash
+sudo nano opt/ros/kinetic/setup-mavros.bash
+```
+We can append the following command to the file and comment other command start with `roslaunch`, here replace the `192.168.0.102` with your ErleBrain IP and `192.168.0.101` with your HostMachine IP:
+```bash
+roslaunch mavros apm.launch fcu_url:="udp://:6001@" gcs_url:="udp://192.168.0.102:9000@192.168.0.101:6000?ids=255,252,1"
+# ErleBrain IP: 192.168.0.102
+# HostMachine IP: 192.168.0.101
+```
+
+## Low-level Control and Communication 
+### Calibration 
+* Follow the instruction from the `Apm Planner 2` to do the calibration;
+
+### Using terminal to send RC signal 
+* We can send to Remote Control through `rostopic`
+    ```bash
+    rostopic pub -r 10 /mavros/rc/override mavros_msgs/OverrideRCIn "channels: [1500, 0, 1500, 0, 0, 0, 0, 0]" 
+    ```
+* We can use the command to **arm** the rover to enable the accelaration of the rover:
+    ```bash
+    rosservice call /mavros/cmd/arming True
+    ```
+* `channel 1` is used to control the steering angle and `channel 3` is used to control the accelaration. 
+* While using the `terminal` to control the rover, the **transmitter** will be disabled, we can run the following command to enable the **transmitter**:
+  ```bash
+  rostopic pub -1 /mavros/rc/override mavros_msgs/OverrideRCIn "channels: [0,0,0,0,0,0,0,0]"
+  ```
+
+### Keyboard Control
+Run the keyboard control node
+```bash
+rosrun keyboard_control keyboard_control_node
+```
+
+Call ROS service to activate the motor of rover
+```
+rosservice call /mavros/cmd/arming True
+```
+
+Use `w,a,s,d` to send the control signal
+  * `w` to speed up
+  * `s` to speed down
+  * `a` to steer left
+  * `d` to steer right
+  * `q` to reset the steering angle and velocity to 0
+  * `ctrl C` to stop
+
+### Data Communication & Acquisition
+Launch the node to receive the localization data from MOCAP, record the localization data to file `data_output.csv`, use **rviz** to visualize the rover state and the coordination system.  
+```bash
+roslaunch rviz_car_model test.launch
+```
+
+## Observer
+TBD
+
+## High-level Controller
+TBD
