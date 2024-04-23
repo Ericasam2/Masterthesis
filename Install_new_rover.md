@@ -1,10 +1,29 @@
 ## Description
 The file is an introduction to how to prepare the software and hardware of the rover remote control system. 
 
-## Singularity
-Singularity is a container platform. It allows you to create and run containers that package up pieces of software in a way that is portable and reproducible. 
+## Table of Contents <a name="outline"></a>
+1. [Table of Contents](#outline)
+2. [Container](#container)
+    - [Setup singularity](#set-up-singularity)
+    - [Setup image](#setup-the-image)
+3. [Prerequisite](#prerequisite)
+4. [Install Ubuntu](#install-ubuntu)
+5. [Install ROS](#install-ros)
+6. [Install MAVLINK and MAVROS](#install-mavlink-and-mavros)
+7. [Connecting to ErleBrain](#connecting-to-erlebrain)
+8. [Host machine and local network](#host-machine-and-local-network)
+9. [ROS configurations](#ros-configurations)
+10. [Low-level Control and Communication](#low-level-control-and-communication)
+      -  [Calibration](#calibration)
+      -  [Send RC signal](#using-terminal-to-send-rc-signal)
+      -  [Keyboard control](#keyboard-control)
+      -  [Data Communication & Acquisition](#data-communication--acquisition)
 
-### Set-up singularity
+
+## Container <a name="container"></a>
+**Singularity** is a container platform. It allows you to create and run containers that package up pieces of software in a way that is portable and reproducible. 
+
+### Set-up singularity <a name="singularity"></a>
 The singularity provided here is `singularity-ce 3.10.2`, the files are available in the following GitHub repository:
 [SingularityCE 3.10.2](https://github.com/sylabs/singularity/releases/tag/v3.10.2)
 
@@ -40,10 +59,18 @@ The output should be
 singularity-ce version 3.10.2-XXXX
 ```
 
-### Setup the image
+### Setup the image <a name="image"></a>
+
+**Download the image** \
 The image can be downloaded from the storage space in [Team - RC rover 2023](https://teams.microsoft.com/_?tenantId=096e524d-6929-4030-8cd3-8ab42de0887b#/school/FileBrowserTabApp/%E5%B8%B8%E8%A7%84?groupId=49107539-c634-4f20-9012-495b83cdc3aa&threadId=19:582ySj6s4WZVJOd7K0HRELjdM0qSSpRiVON46_yPR2o1@thread.tacv2&ctx=channel)
 
-**Open the container**
+Save the image to local `/home/samgao1999/ubuntu_1604.sif` \
+Convert the image to a writable sandbox directory:
+```
+sudo singularity build --sandbox ubuntu_1604 /home/samgao1999/ubuntu_1604.sif
+```
+
+**Open the container** \
 To start the container, run the following command:
 
 ```
@@ -51,28 +78,29 @@ sudo singularity shell -w --hostname 192.168.0.100 kinetic.sif/ hostname
 ```
 Substitute the argument `192.168.0.100` with your host machine IP address
 
+**Bind the container with Native OS** \
+Only the `$home` directory (i.e. `/root`) is linked to the native OS by default, to be able to link to other files in the image change `~/catkin_ws/src/keyboard_control` to the location of the code in your computer, use:
 ```
-sudo singularity shell -w --hostname 192.168.0.100 --bind ~/to_vm/:/root/from_host/ kinetic.sif/ hostname
+sudo singularity shell -w --hostname 192.168.0.100 --bind ~/catkin_ws/src/keyboard_control:/app/catkin_ws/src/keyboard_control kinetic.sif/ hostname
 ```
-Here we bind one folder `~/to_vm/` to the folder in the container `/root/from_host/`
+Here we bind one folder `~/catkin_ws/src/keyboard_control` to the folder in the container `/app/catkin_ws/src/keyboard_control`
 
+**Source the file** 
 ```bash
 source ~/catkin_ws/devel/setup.bash
-
 ```
 
-```
-cp -r ~/from_host/keyboard_control/ ~/catkin_ws/src/
-```
-Use the command to update the file in the ROS workspace
 
-## Prerequisite
+
+## Prerequisite <a name="prerequisite"></a>
+
 Ubuntu 16.04 \
 ROS kinetic \
 MAVROS 0.18.3 \
 MAVLINK 2016.10.10 
 
-## Install Ubuntu
+## Install Ubuntu <a name="ubuntu"></a>
+
 1. Install Ubuntu 16.04: 
    * The ubuntu can be ran on virtual machine (eg. VMWARE)
    * you can follow the [install guide](https://linuxconcept.com/how-to-install-ubuntu-16-04-in-vmware-workstation/) to install the ubuntu. 
@@ -86,7 +114,7 @@ MAVLINK 2016.10.10
 
 The reason for choosing Ubuntu 16.04 is mainly due to compatibility with MAVLINK and MAVROS versions.
 
-## Install ROS
+## Install ROS<a name="ros"></a>
 1. Install ROS Kinetic:
    * The ROS can be installed based on the [Ubuntu install of ROS Kinetic](https://wiki.ros.org/kinetic/Installation/Ubuntu)
 2. Verify ROS Installation:
@@ -104,7 +132,7 @@ The MAVROS and MAVLINK can be installed using `wget` webtool. The following inst
 ```bash
 sudo apt-get install python-catkin-tools python-rosinstall-generator -y
 ```
-2. The workspace in the guide is located in `~/catkin_ws`, change to your prefered folder. 
+2. The workspace in the guide is located in `~/catkin_ws`, change to your preferred folder. 
 ```bash
 mkdir -p ~/catkin_ws/src
 cd ~/catkin_ws
@@ -395,7 +423,7 @@ roslaunch mavros apm.launch fcu_url:="udp://:6001@" gcs_url:="udp://192.168.0.10
 # HostMachine IP: 192.168.0.101
 ```
 
-## Simple Control 
+## Low-level Control and Communication 
 ### Calibration 
 * Follow the instruction from the `Apm Planner 2` to do the calibration;
 
@@ -414,7 +442,33 @@ roslaunch mavros apm.launch fcu_url:="udp://:6001@" gcs_url:="udp://192.168.0.10
   rostopic pub -1 /mavros/rc/override mavros_msgs/OverrideRCIn "channels: [0,0,0,0,0,0,0,0]"
   ```
 
-### Using transmitter to send RC signal 
+### Keyboard Control
+Run the keyboard control node
+```bash
+rosrun keyboard_control keyboard_control_node
+```
+
+Call ROS service to activate the motor of rover
+```
+rosservice call /mavros/cmd/arming True
+```
+
+Use `w,a,s,d` to send the control signal
+  * `w` to speed up
+  * `s` to speed down
+  * `a` to steer left
+  * `d` to steer right
+  * `q` to reset the steering angle and velocity to 0
+  * `ctrl C` to stop
+
+### Data Communication & Acquisition
+Launch the node to receive the localization data from MOCAP, record the localization data to file `data_output.csv`, use **rviz** to visualize the rover state and the coordination system.  
+```bash
+roslaunch rviz_car_model test.launch
+```
+
+## Observer
 TBD
 
-
+## High-level Controller
+TBD
