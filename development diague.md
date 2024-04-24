@@ -60,33 +60,42 @@ singularity-ce version 3.10.2-XXXX
 ```
 
 ### Setup the image <a name="image"></a>
+
+**Download the image** \
 The image can be downloaded from the storage space in [Team - RC rover 2023](https://teams.microsoft.com/_?tenantId=096e524d-6929-4030-8cd3-8ab42de0887b#/school/FileBrowserTabApp/%E5%B8%B8%E8%A7%84?groupId=49107539-c634-4f20-9012-495b83cdc3aa&threadId=19:582ySj6s4WZVJOd7K0HRELjdM0qSSpRiVON46_yPR2o1@thread.tacv2&ctx=channel)
 
-Extract the image to a directory:
-```
-tar -xvf kinetic.tar.gz -C <path_to_your_directory>
+Save the image to local `/home/samgao1999/ubuntu_1604.sif` \
+Convert the image to a writable sandbox directory:
+```bash
+sudo singularity build --sandbox ubuntu_1604 /home/samgao1999/ubuntu_1604.sif
 ```
 
-**Open the container** \
+**Option 1: Just open the container** \
 To start the container, run the following command:
 
-```
+```bash
 sudo singularity shell -w --hostname 192.168.0.100 kinetic.sif/ hostname
 ```
 Substitute the argument `192.168.0.100` with your host machine IP address
 
-**Bind the container with Native OS** \
-Only the `$home` directory (i.e. `/root`) is linked to the native OS by default, to be able to link to other files in the image change `~/catkin_ws/src/keyboard_control` to the location of the code in your computer, use:
-```
+**Option 2: Open the container and bind with Native OS** \
+Only the `$home` directory (i.e. `/root`) is linked to the native OS by default, to be able to link to other files in the image change `~/catkin_ws/src/keyboard_control` to the location of the ROS code in your computer, run the following command:
+```bash
 sudo singularity shell -w --hostname 192.168.0.100 --bind ~/catkin_ws/src/keyboard_control:/app/catkin_ws/src/keyboard_control kinetic.sif/ hostname
 ```
 Here we bind one folder `~/catkin_ws/src/keyboard_control` to the folder in the container `/app/catkin_ws/src/keyboard_control`
 
-**Source the file** 
+**Compile the Code**\
+Go to the ROS workspace on the container:
 ```bash
-source ~/catkin_ws/devel/setup.bash
+cd /app/catkin_ws
+catkin build
 ```
 
+**Source the file** 
+```bash
+source /app/catkin_ws/devel/setup.bash
+```
 
 
 ## Prerequisite <a name="prerequisite"></a>
